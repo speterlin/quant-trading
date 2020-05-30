@@ -2,9 +2,7 @@ pandas
 numpy
 pycoingecko
 datetime
-time
 requests
-personal
 python-binance
 twilio
 yfinance

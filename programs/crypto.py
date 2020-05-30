@@ -7,6 +7,8 @@ BTC_INVEST = 0.1
 STOP_LOSS = -0.3
 TRAILING_STOP_LOSS_ARM, TRAILING_STOP_LOSS_PERCENTAGE = 0.5, -0.2
 
+# binance_client = BinanceClient(ENV['BINANCE_API_KEY'], ENV['BINANCE_API_SECRET'])
+
 def update_positions():
     return
 
