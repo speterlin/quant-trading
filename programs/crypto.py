@@ -12,8 +12,11 @@ TRAILING_STOP_LOSS_ARM, TRAILING_STOP_LOSS_PERCENTAGE = 0.5, -0.2
 def update_positions():
     return
 
-def run_crypto(positions):
+# see if you can run from commandline like python programs/crypto.py run_crypto
+def run_crypto(): # positions
     # run algorithm to add/sell open positions
     print("<< " + str(datetime.now()) + " >>")
     start_time = time.time()
     print(time.time() - start_time) # coingecko updates prices every 4 minutes
+
+run_crypto()
