@@ -1,0 +1,6 @@
+venv/
+personal.py
+deleted/
+
+# Need to investigate this folder, created after import personal (personal.py)
+__pycache__/
