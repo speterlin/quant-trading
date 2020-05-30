@@ -3,7 +3,15 @@
 from datetime import datetime, timedelta
 import time
 
-while True:
+BTC_INVEST = 0.1
+STOP_LOSS = -0.3
+TRAILING_STOP_LOSS_ARM, TRAILING_STOP_LOSS_PERCENTAGE = 0.5, -0.2
+
+def update_positions():
+    return
+
+def run_crypto(positions):
+    # run algorithm to add/sell open positions
+    print("<< " + str(datetime.now()) + " >>")
     start_time = time.time()
-    print("<< " + str(datetime.now()) + " I'm here" + " >>")
-    time.sleep(60.0 - ((time.time() - start_time) % 60.0))
+    print(time.time() - start_time) # coingecko updates prices every 4 minutes
