@@ -4,3 +4,5 @@ deleted/
 
 # Need to investigate this folder, created after import personal (personal.py)
 __pycache__/
+
+data/crypto/assets_backups
