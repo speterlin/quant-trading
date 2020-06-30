@@ -1,8 +1,12 @@
 venv/
 personal.py
+resources/
 deleted/
+programs/
+
+# maybe include these in the future
+cypto.txt
+stocks&fixed_income&commodities.txt
 
 # Need to investigate this folder, created after import personal (personal.py)
 __pycache__/
-
-data/crypto/assets_backups

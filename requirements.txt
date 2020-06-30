@@ -2,8 +2,13 @@ pandas
 numpy
 pycoingecko
 datetime
-requests
+requests>=2.20
+pytrends
+beautifulsoup4
+Cryptory
 python-binance
 twilio
 yfinance
 pytz
+alpaca-trade-api
+ndg-httpsclient

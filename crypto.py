@@ -1,6 +1,13 @@
-# don't run active terminals on different computers (when ran #get_coin_data resulted in losing locally (in venv) installed pycoingecko)
+# don't run active terminals on different computers (when ran #get_coin_data resulted in losing locally (in venv) installed pycoingecko), update modules every so often, look into how can shut off algorithm remotely, always save portfolio if shut down python environment in terminal
 import pandas as pd
 import numpy as np
+
+# data is dataframe column series
+def trendline(data, order=1, reverse_to_ascending=False):
+    data_index_values = data.index.values[::-1] if reverse_to_ascending else data.index.values
+    coeffs = np.polyfit(data_index_values, list(data), order)
+    slope = coeffs[-2]
+    return float(slope)
 
 from pycoingecko import CoinGeckoAPI
 from datetime import datetime, timedelta
@@ -8,7 +15,7 @@ import time
 
 cg = CoinGeckoAPI()
 
-# date is a string in format '%d-%m-%Y', make sure historical time is on utc time, CoinGecko historical saves in UTC time and uses opening price for that day
+# date is a string in format '%d-%m-%Y', make sure historical time is on utc time, CoinGecko historical saves in UTC time and uses opening price for that day, refactor - can return [market_data_in_coin_data, data] to simplify logic issues later, can also move logic of retry_current_if_no_historical_market_data inside function so all of the logic is inside function
 def get_coin_data(coin, date=None, historical=False, retry_current_if_no_historical_market_data=False):
     # probably refactor, if run on current day and utc time is before midnight / want most recent price
     if not historical: # or date == datetime.now().strftime('%d-%m-%Y')
@@ -21,9 +28,23 @@ def get_coin_data(coin, date=None, historical=False, retry_current_if_no_histori
     # maybe refactor and add if 'market_data' not in data or not data['market_data']['market_cap']['usd']: print('Error') and make data['market_data']['current_price']['usd'] = None
     return data
 
-import requests
+# Minutely data will be used for duration within 1 day, Hourly data will be used for duration between 1 day and 90 days, Daily data will be used for duration above 90 days
+def get_coin_data_granular(coin, from_timestamp, to_timestamp, currency='usd'): # time is in local time (PST)
+    data = cg.get_coin_market_chart_range_by_id(coin, vs_currency=currency, from_timestamp=from_timestamp, to_timestamp=to_timestamp)
+    # maybe refactor and add if 'prices' not in data: print('Error') and make data['prices'] = None
+    return data
 
-# same as in crypto.py
+def get_coins_markets(currency='usd', per_page=250, pages=1): # if decide to use less than max 250 entries per_page need to change error_str of _fetch_data executions
+    data = []
+    for page in range(pages):
+        data.extend(cg.get_coins_markets(vs_currency=currency, per_page=per_page, page=page + 1))
+    return data
+
+import requests
+from binance.exceptions import BinanceAPIException, BinanceRequestException #, BinanceWithdrawException, maybe refactor and add for executing binance_trade_coin_btc exceptions (also need logic for these) for BinanceOrderException, BinanceOrderMinAmountException, BinanceOrderMinPriceException, BinanceOrderMinTotalException, BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
+
+# same as in eventregistry/quant-trading/crypto.py
+# need to have ndg-httpsclient, pyopenssl, and pyasn1 (latter 2 are normally already installed) installed to deal with Caused by SSLError(SSLError("bad handshake: SysCallError(60, 'ETIMEDOUT')",),) according to https://stackoverflow.com/questions/33410577 (should also check tls_version and maybe unset https_proxy from commandline), but doesn't seem to work
 def _fetch_data(func, params, error_str, empty_data, retry=True):
     try:
         data = func(**params)
@@ -33,9 +54,51 @@ def _fetch_data(func, params, error_str, empty_data, retry=True):
     except Exception as e:
         print(str(e) + error_str)
         data = empty_data
-        if retry and ((type(e) in [UnboundLocalError, TimeoutError]) or (type(e) == requests.exceptions.HTTPError and e.response.status_code == 429)): # UnboundLocalError because of response error, if use urllib for request TimeoutError is urllib.error.URLError: <urlopen error [Errno 60] Operation timed out>
-            time.sleep(60) # Unsure of request limit for Google Trends other sites, but quote-feed.zacks.com has: Caused by SSLError(SSLError("bad handshake: SysCallError(60, 'ETIMEDOUT')",),)
+        if retry and ((type(e) in [UnboundLocalError, TimeoutError, requests.exceptions.ConnectionError, requests.exceptions.TooManyRedirects, BinanceAPIException, BinanceRequestException]) or (type(e) == requests.exceptions.HTTPError and e.response.status_code == 429)): # UnboundLocalError because of response error (local variable 'response' referenced before assignment), if use urllib for request TimeoutError is urllib.error.URLError: <urlopen error [Errno 60] Operation timed out>, requests.exceptions.ConnectionError is for (even when not using urllib): NewConnectionError('<urllib3.connection.VerifiedHTTPSConnection object at 0x119429240>: Failed to establish a new connection: [Errno 60] Operation timed out and: requests.exceptions.ConnectionError: ('Connection aborted.', OSError("(54, 'ECONNRESET')",)), currently unresolved - (even when not using urllib): Max retries exceeded with url: /?t=PD (Caused by SSLError(SSLError("bad handshake: SysCallError(50/54/60, 'ENETDOWN'/'ETIMEDOUT'/'ECONNRESET')",)
+            time.sleep(60) # CoinGecko has limit of 100 requests/minute therefore sleep for a minute, unsure of request limit for Google Trends
             data = _fetch_data(func, params, error_str, empty_data, retry=False)
+    return data
+
+import pickle
+
+def save_coins_data(): # maybe refactor and add pages parameter to reflect how many pages should be saved but number of pages should be constant # historical in name to reflect the kind of data downloaded
+    coins = _fetch_data(get_coins_markets, params={'currency': 'usd', 'per_page': 250, 'pages': 1}, error_str=" - No " + "" + " coins markets data with pages: " + "1" + " on date: " + str(datetime.now()), empty_data=[])
+    df_coins = pd.DataFrame(columns = ["Market Cap Rank", "Facebook Likes", "Twitter Followers", "Reddit Subscribers", "Reddit Posts & Comments 48h", "Developer Stars", "Developer Issues", "Alexa Rank", "Supply: Total-Circulating"]) # maybe refactor make columns a constant # maybe add columns like "Google Trends"
+    for coin in coins:
+        market_cap_rank = coin['market_cap_rank']
+        coin_data = _fetch_data(get_coin_data, params={'coin': coin['id']}, error_str=" - No " + "" + " coin data for: " + coin['id'], empty_data={})
+        if not coin_data:
+            print("Error retrieving initial coin data for: " + coin['id'])
+            df_coins.loc[coin['id'], "Market Cap Rank"] = market_cap_rank
+        else:
+             # 'total_supply' and 'circulating_supply' not available in historical market data
+            total_supply = coin_data['market_data']['total_supply'] if coin_data['market_data']['total_supply'] else coin_data['market_data']['circulating_supply']
+            # generally incomplete historical community data: facebook likes, twitter followers; developer data
+            df_coins.loc[coin['id']] = [market_cap_rank, coin_data['community_data']['facebook_likes'], coin_data['community_data']['twitter_followers'], coin_data['community_data']['reddit_subscribers'], coin_data['community_data']['reddit_average_posts_48h'] + coin_data['community_data']['reddit_average_comments_48h'], coin_data['developer_data']['stars'], coin_data['developer_data']['total_issues'], coin_data['public_interest_stats']['alexa_rank'], total_supply - coin_data['market_data']['circulating_supply']]
+    f = open('data/crypto/saved_coins_data/' + 'coins_' + datetime.now().strftime('%Y-%m-%d') + '.pckl', 'wb') # 2020_06_02, format is '%Y-%m-%d'
+    pickle.dump(df_coins, f)
+    f.close()
+    return df_coins
+
+def get_saved_coins_data(date): # date is a string in format '%Y-%m-%d'
+    try:
+        f = open('data/crypto/saved_coins_data/' + 'coins_' + date + '.pckl', 'rb')
+        df_coins_historical = pickle.load(f)
+        f.close()
+    except Exception as e:
+        print(str(e) + " - No coins historical saved data for date: " + date)
+        df_coins_historical = pd.DataFrame(columns = ["Market Cap Rank", "Facebook Likes", "Twitter Followers", "Reddit Subscribers", "Reddit Posts & Comments 48h", "Developer Stars", "Developer Issues", "Alexa Rank", "Supply: Total-Circulating"])
+    return df_coins_historical
+
+from cryptory import Cryptory
+
+# works better than pytrends and haven't tried gtrendsR
+def get_cryptory(my_cryptory, data_type, params):
+    if data_type == 'google_trends':
+        data = my_cryptory.get_google_trends(**params) # 2 day lag if my_cryptory to_date is current day
+    if data_type == 'reddit_subscribers':
+        data = my_cryptory.extract_reddit_metrics(**params) # 1 day lag if my_cryptory to_date is current day
+    # extract_coinmarketcap() returning empty Dataframe: Change the dataframe index in line 129 from 0 to 2.
     return data
 
 import personal # need to make sure personal.py is in same directory
@@ -45,131 +108,387 @@ binance_client = BinanceClient(personal.api_key, personal.api_secret)
 
 from twilio.rest import Client as TwilioClient
 
-# the following line needs your Twilio Account SID and Auth Token
 twilio_client = TwilioClient(personal.twilio_account_sid, personal.twilio_auth_token)
 
-# change the "from_" number to your Twilio number and the "to" number
-# to the phone number you signed up for Twilio with, or upgrade your
-# account to send SMS to any phone number
-twilio_client.messages.create(to="+14158028566", from_="+12069845866", body="Hello from Q!!")
+import math
 
-# can add option for market or limit, but for now only limit orders, can also add options for different kind of timeInForce options, also add option to trade on another exchange if necessary
-def trade_coin(symbol_pair=None, trade=None, price_in_btc=None, quantity=None): # don't like non-boolean value for trade value but having two bool values would complicate matters (i.e if both set to True etc.)
-    client_side = BinanceClient.SIDE_SELL if trade == "sell" else BinanceClient.SIDE_BUY if trade == "buy" else None # precautionary, case sensitive and string has to be either 'buy' or 'sell' otherwise error in order
-    order = binance_client.create_order(
-        symbol=symbol_pair,
-        side=client_side,
-        type=BinanceClient.ORDER_TYPE_LIMIT,
-        timeInForce='GTC', # 'day' would be ideal
-        price='{:.8f}'.format(price_in_btc), # 1e-08 is maximum precision allowed by Binance, HOTBTC has lowest price on Binance right now (2020-05-25): $0.000617 (0.00000007BTC), should only worry about precision if a coin worth this much stays the same price and BTC price >= $60,000 (a factor of 1e8 difference)
-        quantity=quantity # have to be ware of minimum buys (especially for coins with low value, usually 0.0001BTC)
-    )
-    if not order['fills']:
-        time.sleep(15) # since order needs to process
-    open_orders = binance_client.get_open_orders(symbol=symbol_pair)
-    print(open_orders)
-    # logic for processing incomplete order
-    # if not open_orders:
-    #     order_price, order_quantity = order['fills'][0]['price'], order['fills'][0]['qty'] # precautionary, order_quantity should be same as quantity
-    #     print(order_price)
-    # elif open_orders[] !=
-    message_body = "Q Trading: " + symbol_pair + " " + trade + " at price: " + str(price_in_btc) + " and quantity: " + str(quantity) + (" not filled :(" if open_orders else " filled!!")
-    twilio_client.messages.create(to="+14158028566", from_="+12069845866", body=message_body)
-    return order
+# can add option for market or limit, but for now only limit orders, can also add options for different kind of timeInForce options, also add option to trade on another exchange if necessary or another base currency, maybe add option for checking 24h_vol, price, pump and dump so can have logic here and return value block_trade for logic at location of trade, returning price_in_btc since a bit more accurate than coingecko price
+def binance_trade_coin_btc(symbol_pair, trade=None, side=None, btc_invest=None, quantity=None, open_time=5, paper_trading=True, other_notes=None): # don't like non-boolean value for trade value but having two bool values would complicate matters (i.e if both set to True etc.) # price_in_btc=None, quantity=None, # open_time minimum should be 30 seconds (for api processing open_order) might be able to use recvWindow with api call
+    if not (trade or side):
+        raise ValueError('trade or side value is required')
+    if not (btc_invest or quantity):
+        raise ValueError("btc_invest or quantity required")
+    side = side if side else BinanceClient.SIDE_SELL if trade == "sell" else BinanceClient.SIDE_BUY if trade == "buy" else None # precautionary, case sensitive and string has to be either 'buy' or 'sell' otherwise error in order # BinanceClient.SIDE_SELL is "SELL" and BinanceClient.SIDE_BUY is "BUY" but precautionary in case python-binance api changes # side is terminology used by python-binance api
+    binance_pairs_with_price_current = {price['symbol']: float(price['price']) if price['price'] else 0 for price in _fetch_data(binance_client.get_all_tickers, params={}, error_str=" - Binance get all tickers error on: " + str(datetime.now()), empty_data=[])} # faster than splitting into binance_btc_pairs_with_price_in_btc and binance_usdt_pairs_with_price, # maybe refactor and use binance_client.get_ticker instead think about same speed
+    price_in_btc = binance_pairs_with_price_current[symbol_pair]
+    quantity = quantity if quantity else math.floor(btc_invest / price_in_btc) if btc_invest > 0.001 else math.ceil(btc_invest / price_in_btc) # have to worry about insufficient BTC available if round up and minimum order amounts (usually around $10 or 0.001 BTC as of June 12 2020) if round down - error if less than minimum: about APIError(code=-1013): Filter failure: MIN_NOTIONAL
+    if paper_trading:
+        message_body = "Q Trading (Paper Trading): " + symbol_pair + " " + (trade if trade else side) + " at price_in_btc " + str(price_in_btc) + " and price $" + str(price_in_btc*binance_pairs_with_price_current['BTCUSDT']) + " and quantity " + str(quantity) + ", " + str(other_notes) + ", :)"
+        print("executed binance_trade_coin_btc\n" + "\033[94m" + message_body +  "\033[0m") # blue # maybe refactor and add other color to function calls
+        return [quantity, price_in_btc, {}, [], None] # here and below maybe add price/price_in_btc
+    # maybe refactor and add alert to ensure ok with real trading
+    order = _fetch_data(binance_client.create_order, params={
+        'symbol': symbol_pair,
+        'side': side,
+        'type': BinanceClient.ORDER_TYPE_LIMIT,
+        'timeInForce': 'GTC', # 'day' would be ideal
+        'price': '{:.8f}'.format(price_in_btc), # 1e-08 is maximum precision allowed by Binance, HOTBTC has lowest price on Binance right now (2020-05-25): $0.000617 (0.00000007BTC), should only worry about precision if a coin worth this much stays the same price and BTC price >= $60,000 (a factor of 1e8 difference)
+        'quantity': quantity
+    }, error_str=" - Binance trade execution error for symbol_pair: " + symbol_pair + ", " + (trade if trade else side) + ", " + str(btc_invest) + ", " + str(quantity) + ", " + " on: " + str(datetime.now()), empty_data={})
+    if not order: # usually due to minimum amount issue, maybe refactor and raise error
+        return [quantity, price_in_btc, {}, [], "BTrade Error"]
+    if not order['fills']: # maybe refactor might be able to use 'executedQty'
+        time.sleep(open_time) # since order not often filled immediately
+    open_orders = _fetch_data(binance_client.get_open_orders, params={'symbol': symbol_pair}, error_str=" - Binance open orders error for symbol_pair: " + symbol_pair + " on: " + str(datetime.now()), empty_data=[]) # maybe refactor unnecessary if order['fills']
+    trade_notes = "Filled" if (order['fills'] and not open_orders) else "Not filled" if (not order['fills'] and open_orders) else "Partially filled" if (order['fills'] and open_orders) else "~Filled" # maybe refactor - could be a situation where there is an order but no order['fills'] and no open_orders (since api processing open_order takes time or not immediately filled but within executing order and order_time - most often the case) which is not a "BTrade Error" as long as open_time=~0
+    message_body = "Q Trading: " + symbol_pair + " " + (trade if trade else side) + " at price_in_btc " + str(price_in_btc) + " and price $" + str(price_in_btc*binance_pairs_with_price_current['BTCUSDT']) + " and quantity " + str(quantity) + ", " + str(other_notes) + ", " + trade_notes + (" :)" if trade_notes == "Filled" else " :/" if trade_notes == "Partially filled" else " :(")
+    color_start, color_end = ["\033[92m", "\033[0m"] if trade_notes == "Filled" else ["\033[33m", "\033[0m"] if trade_notes == "Partially filled" else ["\033[91m", "\033[0m"] # green yellow red # last condition is if "Not filled" or "BTrade Error"
+    print("executed binance_trade_coin_btc\n" + color_start + message_body + color_end + "\n\033[1mOrder:\033[0m " + str(order) + "\n\033[1mOpen orders:\033[0m" + str(open_orders))
+    twilio_client.messages.create(to="+14158028566", from_="+12069845866", body=message_body) # maybe refactor and add twilio _fetch_twilio_data
+    return [quantity, price_in_btc, order, open_orders, trade_notes] # maybe refactor and add position # can add check if order['fills'] 'qty'(s) equal quantity
 
-BTC_INVEST = 0.0001
-symbol_pair = 'CNDBTC' # 'HOTBTC'
-binance_pairs_with_price = {price['symbol']: float(price['price']) if price['price'] else 0 for price in binance_client.get_all_tickers()}
-binance_pairs_with_price['BTCUSDT']
-price_in_btc = binance_pairs_with_price[symbol_pair] # price = binance_pairs_with_price[symbol], but doesn't speed up much
-price = price_in_btc*binance_pairs_with_price['BTCUSDT']
-# depth = binance_client.get_order_book(symbol=symbol) # just shows the number of bids at various prices and asks at various prices
-quantity = round(BTC_INVEST / price_in_btc) # round up for now
+# can refactor and make it exchange_check_btc_24h_vol_and_price, also add pump_and_dump_check
+def binance_check_24h_vol_and_price_in_btc(binance_btc_24h_vol_in_btc, price_in_btc, binance_price_in_btc, binance_btc_24h_vol_in_btc_min=5, binance_price_in_btc_mismatch_limit=0.05):
+    binance_btc_24h_vol_in_btc_too_low, binance_price_in_btc_mismatch = False, False # binance_price_in_btc_mismatch would be a sign of less demand (compared to other exchanges) for coin on binance
+    if binance_btc_24h_vol_in_btc <= binance_btc_24h_vol_in_btc_min:
+        binance_btc_24h_vol_in_btc_too_low = True
+        message_body = "Q Trading: " + symbol_pair + " Binance 24h vol is less than " + str(binance_btc_24h_vol_in_btc_min) + " on: " + str(datetime.now()) + ", not buying :("
+        print("\033[95m" + message_body + "\033[0m") # maybe refactor, repeated below but this way allows for customization and less logic at the end since both situations can occur together
+        twilio_client.messages.create(to="+14158028566", from_="+12069845866", body=message_body)
+    if abs((binance_price_in_btc - price_in_btc) / price_in_btc) >= binance_price_in_btc_mismatch_limit: # maybe refactor for arbitrage opportunities # very unlikely situation, but don't want to buy if overpriced, wait for price to come down
+        binance_price_in_btc_mismatch = True
+        message_body = "Q Trading: " + symbol_pair + " Binance price is more than " + str(binance_price_in_btc_mismatch_limit*100) + "% different than coingecko price on: " + str(datetime.now()) + ", not buying :( but maybe arbitrage :/"
+        print("\033[95m" + message_body + "\033[0m")
+        twilio_client.messages.create(to="+14158028566", from_="+12069845866", body=message_body)
+    return [binance_btc_24h_vol_in_btc_too_low, binance_price_in_btc_mismatch]
 
-trade_coin(symbol_pair=symbol_pair, trade="sell", price_in_btc=price_in_btc, quantity=quantity)
+# can refactor and change to exchange_check_arbitrage
+def binance_check_arbitrage(price, binance_price, binance_price_mismatch_min=0.05):
+    binance_price_mismatch = (binance_price - price) / price
+    if abs(binance_price_mismatch) >= binance_price_mismatch_min:
+        return [True, binance_price_mismatch]
+    return [False, binance_price_mismatch]
 
-# only if order is filled immediately
-order_time = datetime.fromtimestamp(order['transactTime']/1000)
-order_price, order_quantity = order['fills'][0]['price'], order['fills'][0]['qty'] # might be an issue if there are multiple fills as if in a big order has different prices and quantities
+from collections import Counter
 
-open_orders = binance_client.get_open_orders()
-my_trades = binance_client.get_my_trades(symbol=symbol_pair)
-account_status = binance_client.get_account_status()
-deposit_history = binance_client.get_deposit_history()
+def binance_check_arbitrages(pages=1):
+    arbitrage_pairs, coins, same_symbol_coins, binance_api_error_coins = Counter(), [], {'ftt': 'farmatrust', 'hot': 'hydro-protocol', 'stx': 'stox', 'btt': 'blocktrade', 'edg': 'edgeless', 'ghost': 'ghostprism', 'ult': 'shardus', 'box': 'box-token', 'mtc': 'mtc-mesh-network', 'spc': 'spacechain'}, {'pnt': 'penta', 'chat': 'chatcoin', 'btt': 'bittorrent-2', 'sub': 'substratum', 'salt': 'salt', 'phx': 'red-pulse', 'tusd': 'true-usd', 'pax': 'paxos-standard', 'npxs': 'pundi-x', 'dent': 'dent', 'wings': 'wings', 'cloak': 'cloakcoin', 'bcn': 'bytecoin', 'ong': 'ong-social', 'cocos': 'cocos-bcx', 'mft': 'mainframe', 'dgd': 'digixdao', 'key': 'selfkey', 'win': 'wink', 'ncash': 'nucleus-vision'} # 'tac': 'traceability-chain' # same_symbol is just covering the top 1000 by market cap from coingecko # api_error or delisted or not shown on Binance website
+    binance_pairs_with_price_current = {price['symbol']: float(price['price']) if price['price'] else 0 for price in _fetch_data(binance_client.get_all_tickers, params={}, error_str=" - Binance get all tickers error on: " + str(datetime.now()), empty_data=[])}
+    coins = _fetch_data(get_coins_markets, params={'currency': 'usd', 'per_page': 250, 'pages': pages}, error_str=" - No " + "" + " coins markets data with pages: " + str(pages) + " on date: " + str(datetime.now()), empty_data=[])
+    for coin in coins: # refactor, some coins have the same symbol, find a way to select first occurence of symbol, issues with FTT and HOT
+        if coin['symbol'] in (list(same_symbol_coins.keys()) + list(binance_api_error_coins.keys())) and coin['id'] in (list(same_symbol_coins.values()) + list(binance_api_error_coins.values())): # refactor, some coins have the same symbol, find a way to select first occurence of symbol, issues with FTT and HOT
+            continue #     print(coin['id'])
+        # coin_data = _fetch_data(get_coin_data, params={'coin': coin['id']}, error_str=" - No " + "" + " coin data for: " + coin['id'], empty_data={})
+        # if not coin_data or not ('market_data' in coin_data and 'btc' in coin_data['market_data']['current_price']):
+        #     print("Error retreiving market data for coin: " + coin + " on date: " + str(datetime.now()))
+        #     continue
+        price, symbol_pair = coin['current_price'], coin['symbol'].upper() + 'BTC'
+        if symbol_pair in binance_pairs_with_price_current:
+            binance_price = binance_pairs_with_price_current[symbol_pair]*binance_pairs_with_price_current['BTCUSDT'] # price, = coin_data['market_data']['current_price']['btc'],
+            arbitrage, binance_price_mismatch = binance_check_arbitrage(price=price, binance_price=binance_price)
+            if arbitrage:
+                arbitrage_pairs[symbol_pair] = binance_price_mismatch
+    return arbitrage_pairs
 
-assets = pd.DataFrame(columns=['symbol', 'balance', 'current_date', 'current_price', 'current_value', 'current_price(btc)', 'current_value(btc)', 'exchange', 'other_notes']).astype({'symbol': 'object', 'balance': 'float64', 'current_date': 'datetime64', 'current_price': 'float64', 'current_value': 'float64', 'current_price(btc)': 'float64', 'current_value(btc)': 'float64', 'exchange': 'object', 'other_notes': 'object'})
+import re # from collections import Counter
 
-account = binance_client.get_account() # account gets updated after each trade
-# need api call for converting coin symbol to id, coingecko
-coins_symbol_to_id = {'btc': 'bitcoin', 'bnb': 'binancecoin', 'fet': 'fetch-ai', 'kmd': 'komodo', 'cnd': 'cindicator', 'coti': 'coti'}
-coins_id_to_symbol = {v: k for k, v in coins_symbol_to_id.items()}
-binance_pairs_with_price = {price['symbol']: float(price['price']) if price['price'] else 0 for price in binance_client.get_all_tickers()} # faster than splitting into binance_btc_pairs_with_price_in_btc and binance_usdt_pairs_with_price
-btc_price = binance_pairs_with_price['BTCUSDT']
-# assets 'FET', 'KMD' leftover from cryptohopper trades (unable to trade such a small amount)
-for asset in account['balances']:
-    balance_free, balance_locked = float(asset['free']) if asset['free'] else 0, float(asset['locked']) if asset['locked'] else 0 # locked balance means it's an order pending
-    if balance_free > 0:
-        symbol_pair, symbol = asset['asset'] + 'BTC', asset['asset'].lower()
-        # btc/coin prices are quoted in the price of the given exchange not coingecko, and converted to usd with exchange usdt/btc (not the way coingecko does it)
-        price_in_btc = binance_pairs_with_price[symbol_pair] if symbol != 'btc' else 1
-        price = price_in_btc*btc_price
-        assets.loc[coins_symbol_to_id[symbol], ['symbol', 'balance', 'current_date', 'current_price', 'current_value', 'current_price(btc)', 'current_value(btc)', 'exchange']] = [symbol, balance_free, datetime.now(), price, price*balance_free, price_in_btc, price_in_btc*balance_free, 'Binance'] # maybe refactor, issue with tsl_armed dtype changes from bool to object when you add a row
-    if balance_locked > 0:
-        print(asset['asset'] + " has locked balance of: " + str(balance_locked))
-
-# can also trade by way of algorithm (rr), google trends (gtrends_15d), reddit subscribers/comments, twitter followers, alexa rank, etc. instead of just price (tsl, sl) and add columns and conditions for checking these / syncing between computers/data, or just add columns to improve algorithm
-positions = {
-    'open': pd.DataFrame(columns=['symbol', 'position', 'buy_date', 'buy_price', 'balance', 'current_date', 'current_price', 'current_pnl_%', 'exchange', 'tsl_armed', 'tsl_max_price', 'other_notes']).astype({'symbol': 'object', 'position': 'object', 'buy_date': 'datetime64', 'buy_price': 'float64', 'balance': 'float64', 'current_date': 'datetime64', 'current_price': 'float64', 'current_pnl_%': 'float64', 'exchange': 'object', 'tsl_armed': 'bool', 'tsl_max_price': 'float64', 'other_notes': 'object'}),
-    'sold': pd.DataFrame(columns=['coin', 'symbol', 'position', 'buy_date', 'buy_price', 'balance', 'sell_date', 'sell_price', 'pnl_%', 'exchange', 'tsl_max_price', 'other_notes']).astype({'coin': 'object', 'symbol': 'object', 'position': 'object', 'buy_date': 'datetime64', 'buy_price': 'float64', 'balance': 'float64', 'sell_date': 'datetime64', 'sell_price': 'float64', 'pnl_%': 'float64', 'exchange': 'object', 'tsl_max_price': 'float64', 'other_notes': 'object'})
-}
-
-# need api to get average price at which all qty was bought at, time is local (PST), cindicator: 0.00000069 btc/cnd
-positions['open'].loc['cindicator', ['symbol', 'position', 'buy_date', 'buy_price', 'balance', 'exchange', 'tsl_armed']] = [coins_id_to_symbol['cindicator'], 'long', pd.to_datetime('2020-05-20 19:54:32'), 0.00000069*9500, 144927, 'Binance', False] # btc/usd price is from coingecko around that time (binance price was about 0.4% higher)
-positions['open'].loc['coti', ['symbol', 'position', 'buy_date', 'buy_price', 'balance', 'exchange', 'tsl_armed']] = [coins_id_to_symbol['coti'], 'long', pd.to_datetime('2020-05-25 14:17:01'), 2.54e-06*8892, 39370, 'Binance', False] # btc/usd price is from binance around that time
-
-BTC_INVEST = 0.1
-STOP_LOSS = -0.3
-TRAILING_STOP_LOSS_ARM, TRAILING_STOP_LOSS_PERCENTAGE = 0.5, -0.2
-while True:
-    print("<< " + str(datetime.now()) + " >>")
-    start_time = time.time()
-    for coin in positions['open'].index: #
-        # better to have price from coingecko (crypto insurance companies use it, and it represents a wider more accurate picture of the price, also if price hits tsl/sl temporarily on one exchange might be due to a demand/supply anomaly), also common to trade to btc then send btc to another exchange and transfer to fiat there, issue: coingecko only updates every 4 minutes
-        coin_data, price = _fetch_data(get_coin_data, params={'coin': coin}, error_str=" - No " + "" + " coin data for: " + coin + " on date: " + str(datetime.now()), empty_data={}), None
-        if 'market_data' in coin_data and coin_data['market_data']['market_cap']['usd']:
-            price = coin_data['market_data']['current_price']['usd']
-            print(coin + ": " + str(coin_data['market_data']['current_price']['usd']), end=", ")
+def update_portfolio_postions_back_testing(portfolio, stop_day, end_day, **params):
+    STOP_LOSS = portfolio['constants']['sl']
+    TRAILING_STOP_LOSS_ARM, TRAILING_STOP_LOSS_PERCENTAGE = portfolio['constants']['tsl_a'], portfolio['constants']['tsl_p']
+    END_DAY_OPEN_POSITIONS_GTRENDS_15D, END_DAY_OPEN_POSITIONS_BINANCE_BTC_24H_VOL = portfolio['constants']['end_day_open_positions_gtrends_15d'], portfolio['constants']['end_day_open_positions_binance_btc_24h_vol']
+    binance_pairs_with_price_current = params['binance_pairs_with_price_current']
+    # sell if TSL or SL, update current positions (assume symbol doesn't change), update current google trends and/or binance btc 24h vol if conditions met, update current positions
+    for coin in portfolio['open'].index: # print(str(stop_day) + "\n" + str(portfolio['open'].drop(['binance_btc_24h_vol(btc)', 'rank_rise_d', 'gtrends_15d'], axis=1))) # print("updating: " + coin, end=", ") # print("buying: " + coin, end=", ") # print(str(stop_day) + "\n" + str(portfolio['open'].drop(['position', 'buy_date', 'buy_price(btc)', 'balance'], axis=1)))
+        # time is local time (PST) not utc time, price and time are in hourly intervals even within 24 hours
+        if portfolio['open'].loc[coin, 'current_date'].date() >= stop_day.date(): # in case re-run existing portfolio over same days with existing coins to avoid selling incorrectly to TSL (too early) due to tsl_max_price set on future day
+            continue
+        # coin_data_granular = _fetch_data(get_coin_data_granular, params={'coin': coin, 'currency': 'usd', 'from_timestamp': datetime.timestamp(stop_day - timedelta(days=1)), 'to_timestamp': datetime.timestamp(stop_day)}, error_str=" - No granular coin data for: " + coin + " from: " + str(stop_day - timedelta(days=1)) + " to: " + str(stop_day), empty_data={}) # if think in terms of ultimately accumulating btc can make currency 'btc' and have tsl/sl be in relation to btc rather than usd
+        coin_data_granular_in_btc = _fetch_data(get_coin_data_granular, params={'coin': coin, 'currency': 'btc', 'from_timestamp': datetime.timestamp(stop_day - timedelta(days=1)), 'to_timestamp': datetime.timestamp(stop_day)}, error_str=" - No granular coin data for: " + coin + " from: " + str(stop_day - timedelta(days=1)) + " to: " + str(stop_day), empty_data={})
+        if 'prices' not in coin_data_granular_in_btc: # 'market_data' not in coin_data or not coin_data['market_data']['market_cap']['usd']: # remove granular from error_str
+            print("Error retreiving granular market data for coin: " + coin + " on date: " + stop_day.strftime('%Y-%m-%d')) # error message should be covered in method
+            portfolio['open'].loc[coin, 'other_notes'] = "MDI " +  stop_day.strftime('%Y-%m-%d') # MDI stands for Market Data Issue
         else:
-            print("Error retreiving market cap for coin: " + coin + " on date: " + str(datetime.now()), end=", ")
-        if (positions['open'].loc[coin, 'position'] == 'long') and price: # check for if 'position' == 'long' in case implement shorting, price to ensure price was calculated on coingecko
-            buy_price, symbol_pair = positions['open'].loc[coin, 'buy_price'], positions['open'].loc[coin, 'symbol'].upper() + 'BTC' # assuming BTC is base trading pair
-            tsl_armed, tsl_max_price = positions['open'].loc[coin, ['tsl_armed', 'tsl_max_price']]
-            price_change = (price - buy_price) / buy_price
-            if not tsl_armed and price_change >= TRAILING_STOP_LOSS_ARM:
-                tsl_armed, tsl_max_price = True, price
-            if tsl_armed:
-                tsl_price_change = (price - tsl_max_price) / tsl_max_price
-                if price > tsl_max_price:
-                    tsl_max_price = price
-                if tsl_price_change <= TRAILING_STOP_LOSS_PERCENTAGE:
-                    print("<<<< COIN SOLD due to TSL >>>>")
-                    message_body = "Q Trading: " + symbol_pair + " " + "sell" + " at price: " + str(price) + " and quantity: " + str(positions['open'].loc[coin, 'balance']) + " and pnl: " + str(price_change) + " due to TSL"
-                    twilio_client.messages.create(to="+14158028566", from_="+12069845866", body=message_body)
-                    # binance_pairs_with_price = {price['symbol']: float(price['price']) if price['price'] else 0 for price in binance_client.get_all_tickers()} # faster than splitting into binance_btc_pairs_with_price_in_btc and binance_usdt_pairs_with_price
-                    # price_in_btc, quantity = binance_pairs_with_price[symbol_pair], positions['open'].loc[coin, 'balance'] # assuming all open positions want to be sold completely
-                    # trade_coin(symbol_pair=symbol_pair, trade="sell", price_in_btc=price_in_btc, quantity=round(BTC_INVEST / price_in_btc)) # if incomplete order maybe put into positions['pending/open_orders']
-                    # run assets, see if full balance is gone, if any locked make partial
-                    sell_price = price # tsl_max_price * (1 + TRAILING_STOP_LOSS_PERCENTAGE)
-                    positions['sold'] = positions['sold'].append(positions['open'].loc[coin].drop(['current_date','current_price','current_pnl_%','tsl_armed','tsl_max_price','other_notes']).append(pd.Series([coin, datetime.now(), sell_price, (sell_price - buy_price) / buy_price, tsl_max_price, 'Sell by TSL'], index=['coin', 'sell_date', 'sell_price', 'pnl_%',  'tsl_max_price', 'other_notes'])), ignore_index=True)
-                    positions['open'] = positions['open'].drop(coin)
-            if price_change <= STOP_LOSS:
-                print("<<<< COIN SOLD due to SL >>>>")
-                message_body = "Q Trading: " + symbol_pair + " " + "sell" + " at price: " + str(price) + " and quantity: " + str(positions['open'].loc[coin, 'balance']) + " and pnl: " + str(price_change) + " due to SL"
-                twilio_client.messages.create(to="+14158028566", from_="+12069845866", body=message_body)
-                sell_price = price # buy_price * (1 + STOP_LOSS)
-                positions['sold'] = positions['sold'].append(positions['open'].loc[coin].drop(['current_date','current_price','current_pnl_%','tsl_armed','tsl_max_price','other_notes']).append(pd.Series([coin, datetime.now(), sell_price, (sell_price - buy_price) / buy_price, tsl_max_price, 'Sell by SL'], index=['coin', 'sell_date', 'sell_price', 'pnl_%', 'tsl_max_price', 'other_notes'])), ignore_index=True)
-                positions['open'] = positions['open'].drop(coin)
-            positions['open'].loc[coin, ['current_date','current_price','current_pnl_%','tsl_armed','tsl_max_price']] = [datetime.now(), price, price_change, tsl_armed, tsl_max_price]
-            print("[ " + coin + ": " + " price change: " + str(price_change) + ", tsl armed: " + str(tsl_armed) + ", tsl max price: " + str(tsl_max_price) + ", execution time: " + str(time.time() - start_time) + " ]")
-    time.sleep(240.0 - ((time.time() - start_time) % 240.0)) # coingecko updates prices every 4 minutes
-    print("\n") # since using end=", "
+            buy_price_in_btc, tsl_armed, tsl_max_price_in_btc, balance = portfolio['open'].loc[coin, ['buy_price(btc)', 'tsl_armed', 'tsl_max_price(btc)', 'balance']]
+            symbol_pair = portfolio['open'].loc[coin, 'symbol'].upper() + 'BTC'
+            # can add price_trend or google_trend analysis
+            for idx,timestamp_price_in_btc in enumerate(coin_data_granular_in_btc['prices']):
+                price_in_btc, interval_time = timestamp_price_in_btc[1], datetime.fromtimestamp(timestamp_price_in_btc[0]/1000) # CoinGecko timestamp is off by factor of 1000
+                price_in_btc_change = (price_in_btc - buy_price_in_btc) / buy_price_in_btc
+                # if price_in_btc_change >= TAKE_PROFIT_PERCENTAGE:
+                if not tsl_armed and price_in_btc_change >= TRAILING_STOP_LOSS_ARM:
+                    tsl_armed, tsl_max_price_in_btc = True, price_in_btc
+                if tsl_armed:
+                    tsl_price_in_btc_change = (price_in_btc - tsl_max_price_in_btc) / tsl_max_price_in_btc
+                    if price_in_btc > tsl_max_price_in_btc:
+                        tsl_max_price_in_btc = price_in_btc
+                    if tsl_price_in_btc_change <= TRAILING_STOP_LOSS_PERCENTAGE:
+                        # coin_data_granular_in_btc = _fetch_data(get_coin_data_granular, params={'coin': coin, 'currency': 'btc', 'from_timestamp': datetime.timestamp(stop_day - timedelta(days=1)), 'to_timestamp': datetime.timestamp(stop_day)}, error_str=" - No granular coin data for: " + coin + " from: " + str(stop_day - timedelta(days=1)) + " to: " + str(stop_day), empty_data={}) # more time consuming (0.03 vs. 0.003) but more accurate than doing btc_data on stop_day and obtaining btc_price - would be the price for that stop_day (i.e. if sold 2020-06-01 20:00:00 PST btc_price will be (stop_day) btc_price: 2020-06-02 17:00:00 PST) # maybe refactor and check if 'prices' not in coin_data_granular for now let it fail during back_testing don't want to add logic for adding/replacing more important other_notes
+                        sell_price_in_btc = price_in_btc # sell_price, sell_price_in_btc = price, coin_data_granular_in_btc['prices'][idx][1] # tsl_max_price * (1 + TRAILING_STOP_LOSS_PERCENTAGE) # use price even though Minutely data will be used for duration within 1 day, Hourly data will be used for duration between 1 day and 90 days, Daily data will be used for duration above 90 days, since tsl_max_price might also be a bit inaccurate # * (1 - PRICE_UNCERTAINTY_PERCENTAGE)
+                        other_notes, trade_notes = 'Sell by TSL', None # maybe refactor not likely that market_data wont be in btc_data - other_notes[:2] + other_notes[7:9] gives you sUBP allows to see both notes # precautionary trade_notes while back_testing should always be None
+                        portfolio['balance']['btc'] = portfolio['balance']['btc'] + sell_price_in_btc*portfolio['open'].loc[coin, 'balance']
+                        portfolio['sold'], portfolio['open'] = portfolio['sold'].append(portfolio['open'].loc[coin].drop(['current_date', 'current_price(btc)', 'current_pnl_%(btc)', 'binance_btc_24h_vol(btc)', 'tsl_armed', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).append(pd.Series([coin, interval_time, sell_price_in_btc, (sell_price_in_btc - buy_price_in_btc) / buy_price_in_btc, portfolio['open'].loc[coin, 'binance_btc_24h_vol(btc)'], tsl_max_price_in_btc, trade_notes, other_notes], index=['coin', 'sell_date', 'sell_price(btc)', 'pnl_%(btc)', 'binance_btc_24h_vol(btc)', 'tsl_max_price(btc)', 'trade_notes', 'other_notes'])), ignore_index=True), portfolio['open'].drop(coin)
+                        break
+                elif price_in_btc_change <= STOP_LOSS:
+                    # coin_data_granular_in_btc = _fetch_data(get_coin_data_granular, params={'coin': coin, 'currency': 'btc', 'from_timestamp': datetime.timestamp(stop_day - timedelta(days=1)), 'to_timestamp': datetime.timestamp(stop_day)}, error_str=" - No granular coin data for: " + coin + " from: " + str(stop_day - timedelta(days=1)) + " to: " + str(stop_day), empty_data={})
+                    sell_price_in_btc = price_in_btc # sell_price, sell_price_in_btc = price, coin_data_granular_in_btc['prices'][idx][1] # buy_price * (1 + STOP_LOSS) # use price even though Minutely data will be used for duration within 1 day, Hourly data will be used for duration between 1 day and 90 days, Daily data will be used for duration above 90 days, since buy_price might also be a bit inaccurate and unrealistic to sell at exact STOP_LOSS loss # * (1 - PRICE_UNCERTAINTY_PERCENTAGE)
+                    other_notes, trade_notes = 'Sell by SL', None # maybe refactor not likely that market_data wont be in btc_data - other_notes[:2] + other_notes[7:9] gives you sUBP allows to see both notes # precautionary trade_notes while back_testing should always be None
+                    portfolio['balance']['btc'] = portfolio['balance']['btc'] + sell_price_in_btc*portfolio['open'].loc[coin, 'balance']
+                    portfolio['sold'], portfolio['open'] = portfolio['sold'].append(portfolio['open'].loc[coin].drop(['current_date', 'current_price(btc)', 'current_pnl_%(btc)', 'binance_btc_24h_vol(btc)', 'tsl_armed', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).append(pd.Series([coin, interval_time, sell_price_in_btc, (sell_price_in_btc - buy_price_in_btc) / buy_price_in_btc, portfolio['open'].loc[coin, 'binance_btc_24h_vol(btc)'], tsl_max_price_in_btc, trade_notes, other_notes], index=['coin', 'sell_date', 'sell_price(btc)', 'pnl_%(btc)', 'binance_btc_24h_vol(btc)', 'tsl_max_price(btc)', 'trade_notes', 'other_notes'])), ignore_index=True), portfolio['open'].drop(coin)
+                    break
+                if (idx == len(coin_data_granular_in_btc['prices']) - 1): # some days ends earlier than 16:59 like 2020-06-08 ends 15:59 (fet), 16:12 (edo), 16:29 (stmx, bnt) issue with coingecko data (but also when when run on different occasions returns different results for same day i.e. with end_day 6/14/2020 and different start days (6/17/2020 and same start days) return different end times)
+                    if stop_day == end_day:
+                        if END_DAY_OPEN_POSITIONS_BINANCE_BTC_24H_VOL and (symbol_pair in binance_pairs_with_price_current) and (stop_day.date() == datetime.now().date()): # maybe refactor - stop_day.date() == datetime.now().date() is a bit inaccurate (can make accurate to the hour or minute) # uses old/incomplete information - not np.isnan(portfolio['open'].loc[coin, 'binance_btc_24h_vol(btc)'])
+                            binance_btc_24h_vol_in_btc = float(_fetch_data(binance_client.get_ticker, params={'symbol': symbol_pair}, error_str=" - Binance get ticker error for symbol_pair: " + symbol_pair + " on: " + str(datetime.now().date()), empty_data={})['quoteVolume']) # *binance_pairs_with_price_current['BTCUSDT'] # here, buying have to account for error if coin is no longer listed on binance # binance_client.get_ticker other useful keys 'bidPrice', 'bidQty', 'askPrice', 'askQty' OHLV
+                            portfolio['open'].loc[coin, 'binance_btc_24h_vol(btc)'] = binance_btc_24h_vol
+                        if END_DAY_OPEN_POSITIONS_GTRENDS_15D:
+                            my_cryptory, coin_search_term = Cryptory(from_date=(stop_day - timedelta(days=15)).strftime('%Y-%m-%d'), to_date=stop_day.strftime('%Y-%m-%d')), coin if not re.search('-', coin) else coin.split("-")[0] # split since google trends queries don't return enough results / related queries for joint word # 15 days because from observations seems like a good amount
+                            google_trends = _fetch_data(get_cryptory, params={'my_cryptory': my_cryptory, 'data_type': 'google_trends', 'params': {'kw_list': [coin_search_term]}}, error_str=" - No " + "google trends" + " data for coin search term: " + coin_search_term + " from: " + str(stop_day - timedelta(days=15)) + " to: " + str(stop_day), empty_data=pd.DataFrame())
+                            google_trends_slope = trendline(google_trends.sort_values('date', inplace=False, ascending=True)[coin_search_term], reverse_to_ascending=True) if not google_trends.empty else None
+                            portfolio['open'].loc[coin, 'gtrends_15d'] = google_trends_slope
+                    portfolio['open'].loc[coin, ['current_date', 'current_price(btc)', 'current_pnl_%(btc)', 'tsl_armed', 'tsl_max_price(btc)']] = [interval_time, price_in_btc, price_in_btc_change, tsl_armed, tsl_max_price_in_btc]
+    return portfolio
+
+def run_portfolio_rr(portfolio, start_day=None, end_day=None, rr_sell=True, paper_trading=True, back_testing=False): # start_day and end_day are datetime objects # short = False, possibly add short logic # can get rid of back_testing parameter and add logic like start_day.date() < (end_day - timedelta(days=DAYS)).date(), # maybe refactor and add long_position = 'long-p' if paper_trading else 'long'
+    print("running run_portfolio_rr")
+    UP_MOVE, DOWN_MOVE = portfolio['constants']['up_down_move'], -portfolio['constants']['up_down_move']
+    DAYS = portfolio['constants']['days']
+    STOP_LOSS = portfolio['constants']['sl']
+    TRAILING_STOP_LOSS_ARM, TRAILING_STOP_LOSS_PERCENTAGE = portfolio['constants']['tsl_a'], portfolio['constants']['tsl_p'] # TAKE_PROFIT_PERCENTAGE = 1.0
+    BTC_INVEST, BTC_INVEST_MIN = portfolio['constants']['btc_invest'], portfolio['constants']['btc_invest_min']
+    BUY_DATE_GTRENDS_15D, END_DAY_OPEN_POSITIONS_GTRENDS_15D, END_DAY_OPEN_POSITIONS_BINANCE_BTC_24H_VOL = portfolio['constants']['buy_date_gtrends_15d'], portfolio['constants']['end_day_open_positions_gtrends_15d'], portfolio['constants']['end_day_open_positions_binance_btc_24h_vol']
+    # PRICE_UNCERTAINTY_PERCENTAGE = 0.05 # to reflect that can't always buy/sell at CoinGecko price and that stop loss and trailing stop loss orders can't always be fulfilled at the exact percentage
+    binance_pairs_with_price_current = {price['symbol']: float(price['price']) if price['price'] else 0 for price in _fetch_data(binance_client.get_all_tickers, params={}, error_str=" - Binance get all tickers error on: " + str(datetime.now()), empty_data=[])}
+    end_day = end_day if end_day else datetime.now().replace(hour=17, minute=0, second=0, microsecond=0) # better to be on utc time, PST 17h is 24h UTC time, CoinGecko historical saves in UTC time # 02/24/2020 is first day with 100 coins, 02/27/2020 is first day with 200 coins, 03/09/2020 is first day with 250 coins # maybe refactor and make start/stop/end_datetime instead of start/stop/end_day
+    start_day = start_day if start_day else end_day - timedelta(days=DAYS) # not this - datetime.strptime('2020_02_24 17:00:00', '%Y_%m_%d %H:%M:%S') - since back_testing=False (default)
+    stop_day = start_day + timedelta(days=DAYS) # if running in real time stop_day should be almost equivalent (minus processing times) to datetime.now()
+    if (back_testing and not paper_trading) or (not back_testing and ((start_day.date() < (end_day - timedelta(days=DAYS)).date()) or (end_day.date() < datetime.now().date()))): # don't allow back running:
+        print("Error (back testing and not paper trading) or back running")
+        return portfolio
+    retry_end_day_if_no_historical_market_data = True if datetime.utcnow() >= (end_day + timedelta(hours=7)) and datetime.utcnow() <= (end_day + timedelta(hours=7+1)) else False # if run between closing and 1 hour after closing time and historical market_data for stop day (next day in utc time) day not available allow retry on current day, useful if want to make trades within that hour
+    while stop_day.date() <= end_day.date():
+        if back_testing:
+            portfolio = update_portfolio_postions_back_testing(portfolio=portfolio, stop_day=stop_day, end_day=end_day, binance_pairs_with_price_current=binance_pairs_with_price_current)
+        df_coins_interval_start, df_coins_interval_stop = get_saved_coins_data(date=(stop_day - timedelta(days=DAYS)).strftime('%Y-%m-%d')), get_saved_coins_data(date=stop_day.strftime('%Y-%m-%d'))
+        # buy if coin increases in market cap rank by UP_MOVE over DAYS, sell if coin decreases by DOWN_MOVE over DAYS
+        if not (df_coins_interval_start.empty or df_coins_interval_stop.empty):
+            # can also add google trends, reddit possibly chart first coordinate with price timestamp
+            coins_to_buy, coins_to_sell = [], [] # multi-dimensional array [coin, market_cap_rank_change] # coins_market_cap_rank_change_by_factor = Counter()
+            for coin in df_coins_interval_stop.index: # maybe refactor - if add more coins to saved_coins_data can add df_coins_interval_stop/start[:250] so only review certain section of saved_coins_data
+                new_market_cap_rank = df_coins_interval_stop.loc[coin, 'Market Cap Rank']
+                try: # if else statement same number of lines
+                    market_cap_rank_change = df_coins_interval_start.loc[coin, 'Market Cap Rank'] - new_market_cap_rank
+                except Exception as e: # print(str(e) + " - Could not get historical saved market cap rank for: " + coin)
+                    market_cap_rank_change = len(df_coins_interval_start) - new_market_cap_rank if len(df_coins_interval_stop) == len(df_coins_interval_start) else 0 # don't add UP_MOVE/DOWN_MOVE to be safe
+                if market_cap_rank_change >= UP_MOVE:
+                    coins_to_buy.append([coin, market_cap_rank_change])
+                elif market_cap_rank_change <= DOWN_MOVE:
+                    coins_to_sell.append([coin, market_cap_rank_change]) # coins_market_cap_rank_change_by_factor[coin] = market_cap_rank_change
+            for coin in list(set(df_coins_interval_start.index.values) - set(df_coins_interval_stop.index.values)):
+                # len(df_coins_interval_stop) >= len(df_coins_interval_start) should always be true therefore logic works, if coin not in new dataframe assume it has fallen out of top coins: len(df_coins_interval_start) - DOWN_MOVE (to be safe, and DOWN_MOVE assumed to be negative value)
+                coins_to_sell.append([coin, df_coins_interval_start.loc[coin, 'Market Cap Rank'] - (len(df_coins_interval_start) - DOWN_MOVE)]) # market_cap_rank_change unused and inaccurate but still saving # coins_market_cap_rank_change_by_factor[coin] = df_coins_interval_start.loc[coin, 'Market Cap Rank'] - (len(df_coins_interval_start) - DOWN_MOVE)
+            for coin, market_cap_rank_change in coins_to_buy: # coins_market_cap_rank_change_by_factor.items()
+                if coin not in portfolio['open'].index and (portfolio['balance']['btc'] >= BTC_INVEST_MIN): # can add max open positions and a waiting list to reflect real trading: # assuming always enforcing BTC_INVEST_MIN # (market_cap_rank_change >= UP_MOVE) and
+                    btc_invest = BTC_INVEST if (portfolio['balance']['btc'] >= BTC_INVEST) else portfolio['balance']['btc']
+                    if back_testing:
+                        coin_data = _fetch_data(get_coin_data, params={'coin': coin, 'date': (stop_day + timedelta(hours=7)).strftime('%d-%m-%Y'), 'historical': True, 'retry_current_if_no_historical_market_data': retry_end_day_if_no_historical_market_data}, error_str=" - No " + "historical" + " coin data for: " + coin + " on date: " + str(stop_day + timedelta(hours=7)), empty_data={})
+                    else:
+                        coin_data = _fetch_data(get_coin_data, params={'coin': coin}, error_str=" - No " + "" + " coin data for: " + coin + " on date: " + str(datetime.now()), empty_data={}) # retrieving coin_data even when not back_testing as a double check for market cap rank and to retreive symbol, input price_in_btc for function binance_check_24h_vol_and_price_in_btc
+                    # error with some coins (bitbay), if these 2 conditions aren't meant usually indicate larger issues with the coin, further if error retreiving market cap rank whole basis for algorithm falls apart (market cap rank is meaningless)
+                    if 'market_data' in coin_data and coin_data['market_data']['market_cap']['usd']: # refactor can probably get rid of coin_data['market_data']['market_cap']['usd'] / 'usd'/'btc' in coin_data['market_data']['market_cap']/['current_price']
+                        # can add other exchanges
+                        symbol_pair = coin_data['symbol'].upper() + 'BTC' # maybe refactor name to btc_symbol_pair or just symbol_pair like other instances
+                        if symbol_pair in binance_pairs_with_price_current: # not retrieving new prices since whole function should execute (if done over one DAYS period) quickly
+                            price_in_btc = coin_data['market_data']['current_price']['btc'] # price, price_in_btc = coin_data['market_data']['current_price']['usd'], coin_data['market_data']['current_price']['btc'] # maybe refactor -  assuming that if 'market_data' in coin_data and coin_data['market_data']['market_cap']['usd'] ('usd' and 'btc') in coin_data['market_data']['current_price'] also in there
+                            if back_testing: # maybe refactor and put this logic into function binance_trade_coin_btc, maybe also include binance_check_24h_vol_and_price_in_btc in back_testing purchases
+                                buy_date, binance_btc_24h_vol_in_btc, quantity, trade_notes = stop_day, None, math.floor(btc_invest / price_in_btc) if btc_invest > 0.001 else math.ceil(btc_invest / price_in_btc), None # btc_price / price
+                            else:
+                                binance_btc_24h_vol_in_btc = float(_fetch_data(binance_client.get_ticker, params={'symbol': symbol_pair}, error_str=" - Binance get ticker error for symbol_pair: " + symbol_pair + " on: " + str(datetime.now().date()), empty_data={})['quoteVolume']) # *binance_pairs_with_price_current['BTCUSDT'] # no need to check for - if stop_day.date() == datetime.now().date() else None since no back running, also a bit inaccurate (can make accurate to the hour or minute) # can get historical total_volume (exchange-weighted 24h_vol) with coin_data but can't get historical binance_btc_24h_vol (Binance symbol_pair 24h_vol)
+                                binance_btc_24h_vol_in_btc_too_low, binance_price_in_btc_mismatch = binance_check_24h_vol_and_price_in_btc(binance_btc_24h_vol_in_btc=binance_btc_24h_vol_in_btc, price_in_btc=price_in_btc, binance_price_in_btc=binance_pairs_with_price_current[symbol_pair], binance_price_in_btc_mismatch_limit=0.05) # *binance_pairs_with_price_current['BTCUSDT'] # add pump_and_dump_check
+                                if binance_btc_24h_vol_in_btc_too_low or binance_price_in_btc_mismatch:
+                                    continue
+                                quantity, price_in_btc, binance_coin_btc_order, binance_coin_btc_open_orders, trade_notes = binance_trade_coin_btc(symbol_pair=symbol_pair, trade="buy", btc_invest=btc_invest, open_time=5, paper_trading=paper_trading)
+                                buy_date = datetime.now() # if not back_testing buying when run the algorithm, also if back running need to use datetime.now() and if real time running datetime.now() is closer to time order is processed due to api request limits, processing, etc.
+                            if BUY_DATE_GTRENDS_15D:
+                                my_cryptory, coin_search_term = Cryptory(from_date=(stop_day - timedelta(days=15)).strftime('%Y-%m-%d'), to_date=stop_day.strftime('%Y-%m-%d')), coin if not re.search('-', coin) else coin.split("-")[0]
+                                google_trends = _fetch_data(get_cryptory, params={'my_cryptory': my_cryptory, 'data_type': 'google_trends', 'params': {'kw_list': [coin_search_term]}}, error_str=" - No " + "google trends" + " data for coin search term: " + coin_search_term + " from: " + str(stop_day - timedelta(days=15)) + " to: " + str(stop_day), empty_data=pd.DataFrame())
+                                google_trends_slope = trendline(google_trends.sort_values('date', inplace=False, ascending=True)[coin_search_term], reverse_to_ascending=True) if not google_trends.empty else None
+                            else:
+                                google_trends_slope = 0
+                            portfolio['balance']['btc'] = portfolio['balance']['btc'] - price_in_btc*quantity # btc value not entirely accurate in real time and doesn't take into account distribution tokens but close enough to prevent trades from executing if underbudget, also don't check assets since want to allocate full btc value to coin # (price / btc_price) # a bit more accurate than using just btc_invest since rounding for quantity: quantity = math.floor(btc_invest*btc_price / price)
+                            portfolio['open'].loc[coin, ['symbol', 'position', 'balance', 'buy_date', 'buy_price(btc)', 'current_date', 'current_price(btc)', 'current_pnl_%(btc)', 'rank_rise_d', 'gtrends_15d', 'binance_btc_24h_vol(btc)', 'tsl_armed', 'trade_notes']] = [coin_data['symbol'], 'long', quantity] + [buy_date, price_in_btc]*2 + [0, market_cap_rank_change, google_trends_slope, binance_btc_24h_vol_in_btc, False, trade_notes] # assuming buying at 17 PST and that order is filled near coingecko price (maybe refactor)
+                    else: # don't add coin if issue retreiving market_data
+                        print("Error retreiving initial market cap for coin: " + coin + " on date: " + stop_day.strftime('%Y-%m-%d'))
+            for coin, market_cap_rank_change in coins_to_sell:
+                if rr_sell and (coin in portfolio['open'].index): # can add short logic # error if there is a market data issue, sell price and pnl_% does not reflect actual, can try to postpone selling by a day # (market_cap_rank_change <= DOWN_MOVE) and
+                    symbol_pair, balance = portfolio['open'].loc[coin, 'symbol'].upper() + 'BTC', portfolio['open'].loc[coin, 'balance']
+                    if back_testing:
+                        sell_date, sell_price_in_btc, pnl_in_btc_percentage, binance_btc_24h_vol_in_btc, other_notes = portfolio['open'].loc[coin, ['current_date', 'current_price(btc)', 'current_pnl_%(btc)', 'binance_btc_24h_vol(btc)', 'other_notes']] # not using slightly more accurate price with coin_data['market_data']['current_price']['usd'] and date using stop_day (16:.. vs. 17 PST) since then have to recalculate pnl_%
+                        # coin_data = _fetch_data(get_coin_data, params={'coin': coin, 'date': (stop_day + timedelta(hours=7)).strftime('%d-%m-%Y'), 'historical': True, 'retry_current_if_no_historical_market_data': retry_end_day_if_no_historical_market_data}, error_str=" - No " + "historical" + " coin data for: " + coin + " on date: " + str(stop_day + timedelta(hours=7)), empty_data={})
+                        # sell_price_in_btc, other_notes_extra = [coin_data['market_data']['current_price']['btc'], None] if ('market_data' in coin_data and 'btc' in coin_data['market_data']['current_price']) else [sell_price/binance_pairs_with_price_current['BTCUSDT'], "sUsing BPrice"]
+                        other_notes, trade_notes = other_notes, None # other_notes if not other_notes_extra else other_notes_extra[:2] + other_notes_extra[7:9] + str(other_notes), None # only concatenate other_notes strings while back_testing since MDI issue notes only occur during back_testing, should be taken care of if back_testing and then real time trading, other_notes_extra[:2] + other_notes_extra[7:9] gives you sUBP allows to see both notes # precautionary trade_notes while back_testing should always be None
+                    else: # only rr_sell if running in real time, no need to worry about back running (if back running and algorithm has gotten to the current day) - stop_day.date() == datetime.now().date()
+                        sell_date, binance_btc_24h_vol_in_btc = datetime.now(), float(_fetch_data(binance_client.get_ticker, params={'symbol': symbol_pair}, error_str=" - Binance get ticker error for symbol_pair: " + symbol_pair + " on: " + str(datetime.now().date()), empty_data={})['quoteVolume']) # *binance_pairs_with_price_current['BTCUSDT']
+                        coin_data = _fetch_data(get_coin_data, params={'coin': coin}, error_str=" - No " + "" + " coin data for: " + coin + " on date: " + str(datetime.now()), empty_data={})
+                        sell_price_in_btc, other_notes = [coin_data['market_data']['current_price']['btc'], None] if ('market_data' in coin_data and 'btc' in coin_data['market_data']['current_price']) else [binance_pairs_with_price_current[symbol_pair], "sUsing BPrice"] # sell_price, coin_data['market_data']['current_price']['usd'], ('usd' and , binance_pairs_with_price_current[symbol_pair]*binance_pairs_with_price_current['BTCUSDT'], # maybe refactor and add MDI Issue note to other_notes (but only if other_notes not occupied) # assuming selling at 17 PST and that order is filled near coingecko price (maybe refactor)
+                        pnl_in_btc_percentage = (sell_price_in_btc - portfolio['open'].loc[coin, 'buy_price(btc)']) / portfolio['open'].loc[coin, 'buy_price(btc)']
+                        quantity, price_in_btc, binance_coin_btc_order, binance_coin_btc_open_orders, trade_notes = binance_trade_coin_btc(symbol_pair=symbol_pair, trade="sell", quantity=balance, open_time=5, paper_trading=(True if portfolio['open'].loc[coin, 'position'] == 'long-p' else paper_trading))
+                    portfolio['balance']['btc'] = portfolio['balance']['btc'] + sell_price_in_btc*balance # (sell_price / btc_price)
+                    # coin_data already retrieved in current_date, current_price, current_pnl_% # can use np.append(coin, portfolio['open'].loc[coin, [...]].to_numpy())
+                    portfolio['sold'], portfolio['open'] = portfolio['sold'].append(portfolio['open'].loc[coin].drop(['current_date', 'current_price(btc)', 'current_pnl_%(btc)', 'binance_btc_24h_vol(btc)', 'tsl_armed', 'trade_notes', 'other_notes']).append(pd.Series([coin, sell_date, sell_price_in_btc, pnl_in_btc_percentage, binance_btc_24h_vol_in_btc, trade_notes, other_notes], index=['coin', 'sell_date', 'sell_price(btc)', 'pnl_%(btc)', 'binance_btc_24h_vol(btc)', 'trade_notes', 'other_notes'])), ignore_index=True), portfolio['open'].drop(coin)
+        stop_day = stop_day + timedelta(days=1)
+    return portfolio
+
+# assets 'FET', 'KMD' leftover from cryptohopper trades (unable to trade such a small amount), 'TFUEL' because THETA funds in your account on May 2020, 'GTO' when trying to do GTOBTC arbitrage with OkEx exchange, Unsure about 'TOMO' but small amount and in top 250 so needed since sometimes: 504 Server Error: Gateway Time-out
+def get_binance_assets(other_coins_symbol_to_id=None): # maybe refactor don't pass in portfolio since assets should have current open positions in portfolio and new added positions should be in Binance top 250, but possible if run function without assets peviously loaded and a coin in assets on Binance is no longer in Binance top 250 (algorithm should sell at 17PST if coin falls out of top 250 but still possible)
+    print("getting binance assets")
+    account = _fetch_data(binance_client.get_account, params={}, error_str=" - Binance get account error on: " + str(datetime.now()), empty_data={}) # account gets updated after each trade # maybe refactor and include binance_client here and in other functions as a parameter
+    binance_pairs_with_price_current = {price['symbol']: float(price['price']) if price['price'] else 0 for price in _fetch_data(binance_client.get_all_tickers, params={}, error_str=" - Binance get all tickers error on: " + str(datetime.now()), empty_data=[])}
+    assets = pd.DataFrame(columns=['symbol','balance','balance_locked','current_date','current_price','current_value','current_price(btc)','current_value(btc)','other_notes']).astype({'symbol':'object','balance':'float64','balance_locked':'float64','current_date':'datetime64','current_price':'float64','current_value':'float64','current_price(btc)':'float64','current_value(btc)':'float64','other_notes':'object'})
+    coins_symbol_to_id = {**{'btc': 'bitcoin', 'bnb': 'binancecoin', 'fet': 'fetch-ai', 'kmd': 'komodo', 'cnd': 'cindicator', 'coti': 'coti', 'tfuel': 'theta-fuel', 'tomo': 'tomochain', 'gto': 'gifto'}, **{coin['symbol']: coin['id'] for coin in _fetch_data(get_coins_markets, params={'currency': 'usd', 'per_page': 250, 'pages': 1}, error_str=" - No " + "" + " coins markets data with pages: " + "1" + " on date: " + str(datetime.now()), empty_data=[])}}
+    if other_coins_symbol_to_id:
+        coins_symbol_to_id = {**coins_symbol_to_id, **other_coins_symbol_to_id} # maybe refactor and always add assets symbols & ids to coins_symbol_to_id, not sure about processing time: dict(zip(list(assets['symbol']), list(assets.index.values)))
+    for asset in account['balances']:
+        balance_free, balance_locked = float(asset['free']) if asset['free'] else 0, float(asset['locked']) if asset['locked'] else 0 # locked balance means it's an order pending
+        if balance_free > 0:
+            symbol_pair, symbol = asset['asset'] + 'BTC', asset['asset'].lower()
+            # btc/coin prices are quoted in the price of the given exchange not coingecko, and converted to usd with exchange usdt/btc (not the way coingecko does it)
+            price_in_btc = binance_pairs_with_price_current[symbol_pair] if symbol != 'btc' else 1
+            price = price_in_btc*binance_pairs_with_price_current['BTCUSDT']
+            coin = coins_symbol_to_id[symbol]
+            assets.loc[coin, ['symbol','balance','balance_locked','current_date','current_price','current_value','current_price(btc)','current_value(btc)']] = [symbol, balance_free, balance_locked, datetime.now(), price, price*balance_free, price_in_btc, price_in_btc*balance_free]
+            if balance_locked > 0:
+                print(asset['asset'] + " has locked balance of: " + str(balance_locked))
+    return assets
+
+def portfolio_trading(portfolio, paper_trading=True, open_order_price_difference=0.15): # refactor to mimick run_portfolio_rr # short = False, possibly add short logic
+    DAYS = portfolio['constants']['days']
+    STOP_LOSS = portfolio['constants']['sl']
+    TRAILING_STOP_LOSS_ARM, TRAILING_STOP_LOSS_PERCENTAGE = portfolio['constants']['tsl_a'], portfolio['constants']['tsl_p']
+    OPEN_ORDER_PRICE_DIFFERENCE = open_order_price_difference
+    while True:
+        print("<< " + str(datetime.now()) + " >>")
+        start_time = time.time()
+        if (datetime.utcnow().hour == 12) and (datetime.utcnow().minute < 4):
+            twilio_client.messages.create(to="+14158028566", from_="+12069845866", body="Q Trading: running on " + str(datetime.now()) + " :)") # maybe refactor and add twilio _fetch_twilio_data
+        if (datetime.utcnow().hour == 0) and (datetime.utcnow().minute < 4): # 5 since runs every 4 minutes
+            save_coins_data()
+            portfolio = run_portfolio_rr(start_day=(datetime.now() - timedelta(days=DAYS)), end_day=datetime.now(), paper_trading=paper_trading, portfolio=portfolio)
+            twilio_client.messages.create(to="+14158028566", from_="+12069845866", body="Q Trading: Coin data saved and run_portfolio_rr executed on: " + datetime.now().strftime('%Y-%m-%d') + " :)") # maybe refactor and add twilio _fetch_twilio_data
+        for coin in portfolio['open'].index:
+            # better to have price from coingecko (crypto insurance companies use it, and it represents a wider more accurate picture of the price, also if price hits tsl/sl temporarily on one exchange might be due to a demand/supply anomaly), also common to trade to btc then send btc to another exchange and transfer to fiat there, issue: coingecko only updates every 4 minutes
+            coin_data, price_in_btc = _fetch_data(get_coin_data, params={'coin': coin}, error_str=" - No " + "" + " coin data for: " + coin + " on date: " + str(datetime.now()), empty_data={}), None
+            if 'market_data' in coin_data and coin_data['market_data']['market_cap']['usd']:
+                price_in_btc = coin_data['market_data']['current_price']['btc']
+                # print(coin + ": " + str(coin_data['market_data']['current_price']['usd']))
+            else:
+                print("Error retreiving market cap for coin: " + coin + " on date: " + str(datetime.now()))
+            if price_in_btc: # maybe refactor check for if 'position' == 'long'/'long-p' in case implement shorting, price to ensure price was calculated on coingecko
+                buy_price_in_btc, tsl_armed, tsl_max_price_in_btc, balance = portfolio['open'].loc[coin, ['buy_price(btc)', 'tsl_armed', 'tsl_max_price(btc)', 'balance']]
+                price_in_btc_change = (price_in_btc - buy_price_in_btc) / buy_price_in_btc
+                symbol_pair = portfolio['open'].loc[coin, 'symbol'].upper() + 'BTC' # assuming BTC is base trading pair
+                if not tsl_armed and price_in_btc_change >= TRAILING_STOP_LOSS_ARM:
+                    tsl_armed, tsl_max_price_in_btc = True, price_in_btc
+                if tsl_armed:
+                    tsl_price_in_btc_change = (price_in_btc - tsl_max_price_in_btc) / tsl_max_price_in_btc
+                    if price_in_btc > tsl_max_price_in_btc:
+                        tsl_max_price_in_btc = price_in_btc
+                    if tsl_price_in_btc_change <= TRAILING_STOP_LOSS_PERCENTAGE: # should check if price on coingecko is equal/close to price in binance
+                        print("<<<< COIN SOLD due to TSL >>>>")
+                        quantity, price_in_btc, binance_coin_btc_order, binance_coin_btc_open_orders, trade_notes = binance_trade_coin_btc(symbol_pair=symbol_pair, trade="sell", quantity=balance, open_time=5, paper_trading=(True if portfolio['open'].loc[coin, 'position'] == 'long-p' else paper_trading), other_notes=other_notes + " at pnl " + str(price_in_btc_change))
+                        sell_price_in_btc, other_notes = price_in_btc, 'Sell by TSL' # sell_price, = price, coin_data['market_data']['current_price']['btc'],  # tsl_max_price * (1 + TRAILING_STOP_LOSS_PERCENTAGE) # maybe refactor - check if 'btc' in coin_data['market_data']['current_price'], should be if 'usd' in it, logic to check for it a bit cumbersome
+                        portfolio['balance']['btc'] = portfolio['balance']['btc'] + sell_price_in_btc*portfolio['open'].loc[coin, 'balance']
+                        portfolio['sold'], portfolio['open'] = portfolio['sold'].append(portfolio['open'].loc[coin].drop(['current_date', 'current_price(btc)', 'current_pnl_%(btc)', 'tsl_armed', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).append(pd.Series([coin, datetime.now(), sell_price_in_btc, (sell_price_in_btc - buy_price_in_btc) / buy_price_in_btc, tsl_max_price_in_btc, trade_notes, other_notes], index=['coin', 'sell_date', 'sell_price(btc)', 'pnl_%(btc)',  'tsl_max_price(btc)', 'trade_notes', 'other_notes'])), ignore_index=True), portfolio['open'].drop(coin)
+                        continue
+                elif price_in_btc_change <= STOP_LOSS: # should check if price on coingecko is equal/close to price in binance
+                    print("<<<< COIN SOLD due to SL >>>>")
+                    quantity, price_in_btc, binance_coin_btc_order, binance_coin_btc_open_orders, trade_notes = binance_trade_coin_btc(symbol_pair=symbol_pair, trade="sell", quantity=balance, open_time=5, paper_trading=(True if portfolio['open'].loc[coin, 'position'] == 'long-p' else paper_trading), other_notes=other_notes + " at pnl " + str(price_in_btc_change))
+                    sell_price_in_btc, other_notes = price_in_btc, 'Sell by SL' # sell_price, = price, coin_data['market_data']['current_price']['btc'], # buy_price * (1 + STOP_LOSS)
+                    portfolio['balance']['btc'] = portfolio['balance']['btc'] + sell_price_in_btc*portfolio['open'].loc[coin, 'balance']
+                    portfolio['sold'], portfolio['open'] = portfolio['sold'].append(portfolio['open'].loc[coin].drop(['current_date', 'current_price(btc)', 'current_pnl_%(btc)', 'tsl_armed', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).append(pd.Series([coin, datetime.now(), sell_price_in_btc, (sell_price_in_btc - buy_price_in_btc) / buy_price_in_btc, tsl_max_price_in_btc, trade_notes, other_notes], index=['coin', 'sell_date', 'sell_price(btc)', 'pnl_%(btc)', 'tsl_max_price(btc)', 'trade_notes', 'other_notes'])), ignore_index=True), portfolio['open'].drop(coin)
+                    continue
+                portfolio['open'].loc[coin, ['current_date', 'current_price(btc)', 'current_pnl_%(btc)', 'tsl_armed', 'tsl_max_price(btc)']] = [datetime.now(), price_in_btc, price_in_btc_change, tsl_armed, tsl_max_price_in_btc]
+                # print("[ " + coin + ": " + " price change: " + str(price_change) + ", tsl armed: " + str(tsl_armed) + ", tsl max price: " + str(tsl_max_price) + ", execution time: " + str(time.time() - start_time) + " ]")
+        print(str(portfolio['open'].tail(20).drop(['binance_btc_24h_vol(btc)', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price(btc)', 'trade_notes', 'other_notes'], axis=1)) + "\n" + str(portfolio['open'].tail(20).drop(['symbol', 'position', 'buy_date', 'buy_price(btc)', 'balance', 'current_date', 'current_price(btc)', 'current_pnl_%(btc)'], axis=1)) + "\nCurrent PNL % Mean (Real): " + str(portfolio['open'][portfolio['open']['position'] == 'long']['current_pnl_%(btc)'].mean()) + "\nCurrent PNL % Mean (All): " + str(portfolio['open']['current_pnl_%(btc)'].mean()) + "\nExecution time: " + str(time.time() - start_time) + "\n")
+        if datetime.now().minute >= 30 and datetime.now().minute < 34: # runs once per hour at the end of the hour (since if save data or run algorithm at beginning of hour may have conflict since saving data and running algorithm takes time)
+            print(str(portfolio['sold'].tail(20).drop(['symbol', 'binance_btc_24h_vol(btc)', 'rank_rise_d', 'gtrends_15d'], axis=1)) + "\nPNL % Mean: " + str(portfolio['sold']['pnl_%(btc)'].mean()) + "\nPortfolio Available BTC Balance: " + str(portfolio['balance']['btc']) + "\n")
+            arbitrage_pairs = binance_check_arbitrages(pages=4) # 4 pages gets you 190/~203 BTC pairs, anything above 4 is very incremental
+            assets = get_binance_assets(other_coins_symbol_to_id=dict(zip(list(portfolio['open']['symbol'].values) + list(portfolio['sold']['symbol'].values), list(portfolio['open'].index.values) + list(portfolio['sold']['coin'].values))))
+            if assets.loc['bitcoin', 'balance'] != portfolio['balance']['btc']: # and assets.loc['bitcoin', 'balance_locked'] == 0 # simple way to make sure bitcoin balance is correct every hour and to prevent orders
+                portfolio['balance']['btc'] = assets.loc['bitcoin', 'balance']
+                print("Portfolio Available BTC Balance (after correction): " + str(portfolio['balance']['btc']))
+            print(str(assets) + "\nTotal Current Value: " + str(assets['current_value'].sum()) + "\nTotal Current Value (BTC): " + str(assets['current_value(btc)'].sum()) + "\nExecution time: " + str(time.time() - start_time) + "\n")
+            print("Arbitrage pairs within +/- 50%: " + str(Counter({key: value for key,value in arbitrage_pairs.items() if abs(value) <= 0.5})) + "\n") # unrealistic that any arbitrage opportunities outside of 50% would exist, easy way to deal with coin scams, low volume traded coins, other logic issues
+            binance_open_orders = _fetch_data(binance_client.get_open_orders, params={}, error_str=" - Binance open orders error on: " + str(datetime.now()), empty_data=[]) # for coin in assets[assets['balance_locked'] > 0].index: # if assets['balance_locked'].any(): - balance_locked not the way since if btc is locked don't know what you're buying just know that you're using btc to buy it
+            if binance_open_orders: # maybe refactor and looked at assets balance_locked, see if full balance is gone, if any locked make partial
+                print("Binance open orders: " + str(binance_open_orders))
+                binance_pairs_with_price_current = {price['symbol']: float(price['price']) if price['price'] else 0 for price in _fetch_data(binance_client.get_all_tickers, params={}, error_str=" - Binance get all tickers error on: " + str(datetime.now()), empty_data=[])}
+                for open_order in binance_open_orders:
+                    symbol = open_order['symbol'].lower().split("btc")[0]
+                    symbol_pair, original_quantity, executed_quantity, order_id, side, order_time = open_order['symbol'], float(open_order['origQty']), float(open_order['executedQty']), open_order['orderId'], open_order['side'], datetime.fromtimestamp(open_order['time']/1000) # open_order also has 'updateTime' 'status' 'isWorking' 'clientOrderId' might be useful # maybe refactor shouldn't be a float() issue but precautionary # maybe refactor name orderId to order_id
+                    df_matching_open_options = portfolio['open'][(portfolio['open']['position'] == 'long') & (portfolio['open']['symbol'] == symbol) & (portfolio['open']['trade_notes'].isin(["Not filled", "Partially filled"]))] # assuming it's a long position have not implemented shorting: # also assuming side is a BUY, should always be a buy if in positions['open'] can add precautionary check but have to worry about BinanceClient changing their api for SIDE_BUY/SIDE_SELL # maybe add precautionary check for order_time withing +/- 10 minutes if worried about interfering with manual buys: & (portfolio['open']['buy_date'] <= order_time + timedelta(minutes=10)) & (portfolio['open']['buy_date'] >= order_time - timedelta(minutes=10))
+                    if not df_matching_open_options.empty: # maybe refactor and add precautionary check - shouldn't have to check len() == 1 since symbol, like coin (index) should be unique in portfolio['open'] unless two different coins have the same symbol
+                        coin = df_matching_open_options.index[0]
+                        if abs((binance_pairs_with_price_current[symbol_pair] - portfolio['open'].loc[coin, 'buy_price(btc)']) / portfolio['open'].loc[coin, 'buy_price(btc)']) <= OPEN_ORDER_PRICE_DIFFERENCE: # *binance_pairs_with_price_current['BTCUSDT'] # refactor can make that a parameter also not sure if necessary, can be sl/2
+                            resp = _fetch_data(binance_client.cancel_order, params={'symbol': symbol_pair, 'orderId': order_id}, error_str=" - Binance cancel order error for symbol_pair: " + symbol_pair + " and orderId: " + str(order_id) + " on: " + str(datetime.now()), empty_data=[]) # maybe refactor unnecessary if order['fills']
+                            if resp['status'] == 'CANCELED': # cancelled is more British English, canceled is more American English, Binance uses canceled, grammarly.com/blog/canceled-vs-cancelled
+                                original_price_in_btc = portfolio['open'].loc[coin, 'buy_price(btc)']
+                                balance = original_quantity - executed_quantity # assuming (and should be based on code), that original_quantity is same as portfolio['open'].loc[coin, 'balance'], no need for precautionary check IMO
+                                quantity, price_in_btc, binance_coin_btc_order, binance_coin_btc_open_orders, trade_notes = binance_trade_coin_btc(symbol_pair=symbol_pair, side=side, quantity=balance, open_time=5, paper_trading=paper_trading, other_notes="Retrying open order for coin " + coin + " bought on " + str(order_time))
+                                new_price_in_btc = (price_in_btc*quantity + original_price_in_btc*executed_quantity) / original_quantity
+                                portfolio['open'].loc[coin, ['buy_date', 'buy_price(btc)', 'trade_notes', 'other_notes']] = [datetime.now(), new_price_in_btc, trade_notes, "Retried order"] # update buy_date in case new order is incomplete # not tracking how many times retrying order too much logic for unlikely situation (unlikely that will need to retry more than once if adjust price after an hour)
+                    df_matching_sold_options = portfolio['sold'][(portfolio['sold']['position'] == 'long') & (portfolio['sold']['symbol'] == symbol) & (portfolio['sold']['trade_notes'].isin(["Not filled", "Partially filled"])) & (portfolio['sold']['sell_date'] <= order_time + timedelta(minutes=10)) & (portfolio['sold']['sell_date'] >= order_time - timedelta(minutes=10))] # assuming it's a long position have not implemented shorting # +/- 10 minutes since order time most likely (micro) seconds off time recorded - might be issue if have an order cancelled and re-ordered associated with original order but now different order_time # also assuming side is a SELL, should always be a sell if in positions['sold'] can add precautionary check but have to worry about BinanceClient changing their api for SIDE_BUY/SIDE_SELL
+                    if not df_matching_sold_options.empty: # maybe refactor and add precautionary check - shouldn't have to check len() == 1 since symbol, trade_notes and order_time time frame (+/- 10 minutes)
+                        idx = df_matching_sold_options.index[0]
+                        if abs((binance_pairs_with_price_current[symbol_pair] - portfolio['sold'].loc[coin, 'sell_price(btc)']) / portfolio['sold'].loc[coin, 'sell_price(btc)']) <= OPEN_ORDER_PRICE_DIFFERENCE: # *binance_pairs_with_price_current['BTCUSDT'] # refactor can make that a parameter also not sure if necessary, can be sl/2
+                            resp = _fetch_data(binance_client.cancel_order, params={'symbol': symbol_pair, 'orderId': order_id}, error_str=" - Binance cancel order error for symbol_pair: " + symbol_pair + " and orderId: " + str(order_id) + " on: " + str(datetime.now()), empty_data=[]) # maybe refactor unnecessary if order['fills']
+                            if resp['status'] == 'CANCELED': # cancelled is more British English, canceled is more American English, Binance uses canceled
+                                original_price_in_btc = portfolio['open'].loc[coin, 'sell_price(btc)']
+                                balance = original_quantity - executed_quantity
+                                quantity, price_in_btc, binance_coin_btc_order, binance_coin_btc_open_orders, trade_notes = binance_trade_coin_btc(symbol_pair=symbol_pair, side=side, quantity=balance, open_time=5, paper_trading=paper_trading, other_notes="Retrying open order for coin " + coin + " sold on " + str(order_time))
+                                new_price_in_btc = (price_in_btc*quantity + original_price_in_btc*executed_quantity) / original_quantity
+                                portfolio['sold'].loc[coin, ['sell_date', 'sell_price(btc)', 'trade_notes', 'other_notes']] = [datetime.now(), new_price_in_btc, trade_notes, "Retried order"] # update sell_date in case new order is incomplete
+                binance_open_orders = _fetch_data(binance_client.get_open_orders, params={}, error_str=" - Binance open orders error on: " + str(datetime.now()), empty_data=[])
+                print("Binance open orders (after): " + str(binance_open_orders) + "\nExecution time: " + str(time.time() - start_time) + "\n")
+            else: # update orders completed but listed as incomplete incorrectly by binance_trade_coin_btc
+                for coin in portfolio['open'].index:
+                    if (portfolio['open'].loc[coin, 'position'] == "long") and portfolio['open'].loc[coin, 'trade_notes'] in ["Not filled", "Partially filled"]:
+                        portfolio['open'].loc[coin, 'trade_notes'] = "Filled"
+                for coin in portfolio['sold'].index:
+                    if (portfolio['sold'].loc[coin, 'position'] == "long") and portfolio['sold'].loc[coin, 'trade_notes'] in ["Not filled", "Partially filled"]:
+                        portfolio['sold'].loc[coin, 'trade_notes'] = "Filled"
+            # can also add updates for if assets go above or below a certain value
+        save_portfolio_backup(portfolio) # save every 4 minutes for now, in case something happens
+        time.sleep(240.0 - ((time.time() - start_time) % 240.0))
+
+import os # os.getcwd() # os.chdir()
+
+def save_portfolio_backup(portfolio): # can add logic for different types of portfolio i.e. rr with different kinds of parameters i.e. different up and down moves
+    print("portfolio saved")
+    portfolio_constants = "_".join([str(value) if key != 'up_down_move' else str(value) + "_" + str(value) for key,value in list(portfolio['constants'].items())]) if portfolio['constants']['type'] == 'rr' else "_".join([str(value) for key,value in list(portfolio['constants'].items())])
+    if (datetime.now().hour == 0) and (datetime.now().minute < 4): # maybe refactor and check if file exists to avoid getting error: if os.path.exists("demofile.txt"):, should only be an error if start script between 12am and 12:04am
+        os.remove('data/crypto/saved_portfolio_backups/' + 'portfolio_' + portfolio_constants + '_to_' + (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d') + '.pckl')
+    f = open('data/crypto/saved_portfolio_backups/' + 'portfolio_' + portfolio_constants + '_to_' + datetime.now().strftime('%Y-%m-%d') + '.pckl', 'wb') # 2020_06_02, format is '%Y-%m-%d'
+    pickle.dump(portfolio, f)
+    f.close()
+    return portfolio
+
+def get_saved_portfolio_backup(portfolio_name): # portfolio name is portfolio_ + constants, like: portfolio_50_20_-0.3_0.5_-0.2_0.1_0.01_True_False_False # date is a string in format '%Y-%m-%d'
+    try:
+        f = open('data/crypto/saved_portfolio_backups/' + portfolio_name + '.pckl', 'rb')
+        portfolio = pickle.load(f)
+        f.close()
+    except Exception as e:
+        print(str(e) + " - No saved portfolio backup with name: " + portfolio_name)
+        # refactor better to have 'exchange', 'exchange_24h_vol', 'total_24h_vol', 'binance_btc_24h_vol(btc)' column works for now, maybe add column for 'price/volume_trend' (to eliminate coin pumps/pumps and dumps) # for column dtypes: both didn't work - dtype=[np.datetime64, np.float64, np.datetime64, np.float64]) # dtype=np.dtype([('datetime64','float64','datetime64','float6')])) # no need for portfolio['open_orders'] since tracking assets which has balance_locked (in order) # maybe refactor 'open' index to allow for multiple 'long' positions for the same coin but have to worry about portfolio['open'].loc[idx, ...], maybe refactor and change 'balance' to 'quantity' since portfolio not holding (meant to hold) onto assets for long term and each asset is not being refilled/sold incompletely (at least not intentionally)
+        portfolio = {
+            'constants': {'type': 'rr', 'up_down_move': 50, 'days': 20, 'sl': -0.3, 'tsl_a': 0.5, 'tsl_p': -0.2, 'btc_invest': 0.1, 'btc_invest_min': 0.01, 'buy_date_gtrends_15d': True, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_binance_btc_24h_vol': False, 'start_day': '2020-02-24'}, # assuming always enforcing btc_invest_min
+            'balance': {'btc': 1.0},
+            'open': pd.DataFrame(columns=['symbol', 'position', 'buy_date', 'buy_price(btc)', 'balance', 'current_date', 'current_price(btc)', 'current_pnl_%(btc)', 'binance_btc_24h_vol(btc)', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).astype({'symbol': 'object', 'position': 'object', 'buy_date': 'datetime64', 'buy_price(btc)': 'float64', 'balance': 'float64', 'current_date': 'datetime64', 'current_price(btc)': 'float64', 'current_pnl_%(btc)': 'float64', 'binance_btc_24h_vol(btc)': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price(btc)': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}),
+            'sold': pd.DataFrame(columns=['coin', 'symbol', 'position', 'buy_date', 'buy_price(btc)', 'balance', 'sell_date', 'sell_price(btc)', 'pnl_%(btc)', 'binance_btc_24h_vol(btc)', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).astype({'coin': 'object', 'symbol': 'object', 'position': 'object', 'buy_date': 'datetime64', 'buy_price(btc)': 'float64', 'balance': 'float64', 'sell_date': 'datetime64', 'sell_price(btc)': 'float64', 'pnl_%(btc)': 'float64', 'binance_btc_24h_vol(btc)': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price(btc)': 'float64', 'trade_notes': 'object', 'other_notes': 'object'})
+        }
+    return portfolio
+
+portfolio = get_saved_portfolio_backup('portfolio_rr_50_50_20_-0.3_0.5_-0.2_0.1_0.01_True_False_False_2020-02-24_to_' + datetime.now().strftime('%Y-%m-%d'))
+
+# BE CAREFUL
+portfolio_trading(paper_trading=True, portfolio=portfolio) # portfolio_rr_50_50_20_sl_0_3_tsl_a_0_5_p_0_2
