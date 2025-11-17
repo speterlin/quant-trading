@@ -1,14 +1,20 @@
+setuptools
 pandas
 numpy
 pycoingecko
 datetime
 requests>=2.20
-pytrends
-beautifulsoup4
-Cryptory
 python-binance
+python-kucoin
 twilio
-yfinance
+yfinance==0.1.52
+beautifulsoup4
+alpha_vantage
+aiohttp
+websockets
+urllib3
+alpaca-trade-api --no-dependencies
+alpaca-py
+pytrends
 pytz
-alpaca-trade-api
 ndg-httpsclient
