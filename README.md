@@ -30,7 +30,10 @@ Your virtual environment should have installed and up-to-date modules necessary 
 
 You should have multiple accounts with the brokerage you trade with so you can run multiple real trading (paper_trading=False) scripts, in this case account 1: <<your_username>> and account 2: <<your_other_username>>, both with Alpaca. You can paper_trade multiple scripts off one account if you set stocks.portfolio_trading(portfolio=portfolio, paper_trading_on_used_account=True, ...) which doesn't paper_trade on Alpaca / Kucoin itself just in your virtual environment. Twilio is only necessary if you want text notifications to your phone (you'll need to set up personal.twilio_phone_to and personal.twilio_phone_from numbers with Twilio).
 
-`import stocks # always run from quant-trading root directory because stocks includes functions which saves / retrieves data in paths off of this root directory
+
+
+```python
+import stocks # always run from quant-trading root directory (/Library/Mobile Documents/com~apple~CloudDocs/quant-trading or most recent /icloud/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory
 
 import os
 import alpaca_trade_api as tradeapi
@@ -56,12 +59,14 @@ portfolio = stocks.get_saved_portfolio_backup("portfolio_rr_50_-50_20_-0.2_0.2_-
 
 # BE CAREFUL, paper_trading: update to current value (to reflect current trading, especially when need to restart the script ensure paper_trading reflects last paper_trading value), portfolio_usd_value_negative_change_from_max_limit (variable not listed since keep at default that reflects a Stop-Loss on your entire portfolio, default is -0.3, meaning that if your portfolio loses 30% relative to it's max value it will automatically panic sell negative roi assets and set paper_trading=True and continue paper_trading=True until current assets >= portfolio_max_value*(1-0.3) and current_roi >= 0.045),  portfolio_current_roi_restart: a variable that if paper_trading=True (and 'engaged': True) reflects when the python script changes to paper_trading=False (when current_roi >= 0.045 in this example), download_and_save_tickers_data: have to ensure that one portfolio_trading instance is saving data (don't want all of your scripts to be saving data, just one and then the other scripts wait for the data to be saved and execute their algorithm runs on that saved data)
 stocks.portfolio_trading(portfolio=portfolio, paper_trading=False, portfolio_current_roi_restart={'engaged': False, 'limit': 0.045}, download_and_save_tickers_data=True)`
+```
 
 ## Another Python script for Stocks (with AI trading, programs/stocks/stocks_tngaia_alpaca_<<your_other_username>>.py)
 
 tngaia is an acronym for what kind of algorithm the trading script incorporates, in this case Top-N Gainers AI Analysis (where n is a number set in parameters reflecting top-n gainers from the day to be analyzed by AI - OpenAI or Gemini Pro, both options are available in stocks module - for buy / sell opportunities executed at start of next trading day).
 
-`import stocks # always run from quant-trading root directory (/Library/Mobile Documents/com~apple~CloudDocs/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory
+```python
+import stocks # always run from quant-trading root directory (/Library/Mobile Documents/com~apple~CloudDocs/quant-trading or most recent /icloud/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory
 
 import os
 import alpaca_trade_api as tradeapi
@@ -100,10 +105,12 @@ portfolio = stocks.get_saved_portfolio_backup("portfolio_tngaia_[8, 4]_1_-0.3_0.
 
 # BE CAREFUL, update to current paper_trading, portfolio_usd_value_negative_change_from_max_limit, portfolio_current_roi_restart, have to ensure that another portfolio_trading instance is saving data (download_and_save_tickers_data)
 stocks.portfolio_trading(portfolio=portfolio, paper_trading=True, paper_trading_on_used_account=True, portfolio_usd_value_negative_change_from_max_limit=-0.69, portfolio_current_roi_restart={'engaged': True, 'limit': 0.075}) # portfolio_rr_50_50_20_sl_0_3_tsl_a_0_5_p_0_2 # , buying_disabled=False`
+```
 
 ## Python script for Crypto (programs/crypto/crypto_kucoin_<<your_username>>)
 
-`import crypto # always run from quant-trading root directory (/Library/Mobile Documents/com~apple~CloudDocs/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory
+```python
+import crypto # always run from quant-trading root directory (/Library/Mobile Documents/com~apple~CloudDocs/quant-trading or most recent /icloud/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory
 
 import personal
 # from binance.client import Client as BinanceClient # github: binance-exchange/python-binance # here and below: binance.exceptions.BinanceAPIException: APIError(code=0): Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received this message in error.
@@ -124,22 +131,29 @@ portfolio = crypto.get_saved_portfolio_backup("portfolio_usdt_rr_10_-10_20_-0.3_
 
 # BE CAREFUL, update to current paper_trading, portfolio_btc_value_negative_change_from_max_limit, portfolio_current_roi_restart
 crypto.portfolio_trading(portfolio=portfolio, exchange="kucoin", paper_trading=True, portfolio_usdt_value_negative_change_from_max_limit=-0.05, portfolio_current_roi_restart={'engaged': True, 'limit': 0.90}, download_and_save_coins_data=True)`
+```
 
 ## Checking asset value in virtual Python environment (calling Python and then entering virtual Python environment as opposed to running a script with python <<directory_path/file_name.py>>) after manually line-by-line importing necessary modules listed in appropriate script like Python script for Stocks programs/stocks/stocks_alpaca_<<your_username>>.py to properly set up that Python environment
 
 Stocks:
-`account, alpaca_open_orders = stocks._fetch_data(stocks.alpaca_api.get_account, params={}, error_str=" - No account from Alpaca on: " + str(datetime.now()), empty_data = {}), stocks._fetch_data(stocks.alpaca_api.list_orders, params={'status': 'open', 'nested': True}, error_str=" - Alpaca open orders error on: " + str(datetime.now()), empty_data=[])
+```python
+account, alpaca_open_orders = stocks._fetch_data(stocks.alpaca_api.get_account, params={}, error_str=" - No account from Alpaca on: " + str(datetime.now()), empty_data = {}), stocks._fetch_data(stocks.alpaca_api.list_orders, params={'status': 'open', 'nested': True}, error_str=" - Alpaca open orders error on: " + str(datetime.now()), empty_data=[])
 assets = stocks.get_alpaca_assets(alpaca_account=account, alpaca_open_orders=alpaca_open_orders)
 print(str(assets) + "\nTotal Current Value: " + str(assets['current_value'].sum()) + "\nAccount Equity: " + str(account.equity) + "\nAccount Buying Power: " + str(account.buying_power))`
-
+```
 Crypto:
-`assets = crypto.get_kucoin_assets()
+```python
+assets = crypto.get_kucoin_assets()
 print(str(assets) + "\nTotal Current Value: " + str(assets['current_value'].sum()) + "\nTotal Current Value (BTC): " + str(assets['current_value(btc)'].sum()))`
+```
 
 ## Backtesting in virtual Python environment (like stated above)
 
 Stocks:
-`portfolios = {} #  # rr,,tr # long only # maybe refactor pccepsf to industry check  like ic
+```python
+import pandas as pd
+
+portfolios = {} #  # rr,,tr # long only # maybe refactor pccepsf to industry check  like ic
 type = 'rr' # 'tilupccu'
 up_down_moves = [10,20,50,100] # [5] # [1,0],[1,-1] #  
 bt_days = [15,20] # , # , 1,2,5,10 # , # 90,120,150,180,210,240,270,300,330,365
@@ -168,7 +182,7 @@ for up_down_move in up_down_moves:
             for usd_invest in usd_invests:
                 for balance_usd in balances_usd:
                     # maybe add column for 'rank_rise' (within S&P 500), 'rank/price/volume_trend' or 'buy_date_fmp_24h_vol', for column dtypes: both didn't work - dtype=[np.datetime64, np.float64, np.datetime64, np.float64]) # dtype=np.dtype([('datetime64','float64','datetime64','float6
-                    portfolio = { # 'tr', 'zr' and remove up_down_move, 'tr' have to start on '2020-05-08', first day with tradingview ratings # 'up_down_move': 100, 'days': 15, 'sl': -0.15, 'tsl_a': 0.05, 'tsl_p': -0.0125, 'usd_invest': 1000,
+                    portfolio = {
                         'constants': {'type': type, 'up_down_move': up_down_move, 'days': days, 'sl': sl, 'tsl_a': tsl_a, 'tsl_p': tsl_p, 'usd_invest': usd_invest, 'usd_invest_min': 100, 'buy_date_gtrends_15d': False, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_fmp_24h_vol': False, 'start_balance': {'usd': balance_usd}, 'start_day': '2024-12-01'}, # assuming always enforcing usd_invest_min
                         'balance': {'usd': balance_usd},
                         'max_value': {'usd': float("NaN")},
@@ -204,12 +218,17 @@ for portfolio_name, portfolio in portfolios.items():
     portfolios_updated[portfolio_name] = stocks.run_portfolio(portfolio=new_portfolio, start_day=datetime.strptime('2025_01_18 13:00:00', '%Y_%m_%d %H:%M:%S'), end_day=datetime.strptime('2025_03_06 13:00:00', '%Y_%m_%d %H:%M:%S'), paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 420, 'days': 20}, tickers_with_stock_splits=tickers_with_stock_splits) # ,
 
 # Saving portfolio values to data (make sure that dates reflect start and end date):
-f = open('data/stocks/saved_portfolio_backups/back_testing/' + 'portfolios_' + type + '_' + ','.join(map(str,up_down_moves)) + '_' + ','.join(map(str,bt_days)) + '_' + ','.join(map(str,sl_tsl_a_ps)) + '_' +  ','.join(map(str,usd_invests)) + '_' + ','.join(map(str,balances_usd)) + '_2024-12-01_to_2025-02-28' + '.pckl', 'wb') #    'rb'
+f = open('data/stocks/saved_portfolio_backups/back_testing/' + 'portfolios_' + type + '_' + ','.join(map(str,up_down_moves)) + '_' + ','.join(map(str,bt_days)) + \
+ '_' + ','.join(map(str,sl_tsl_a_ps)) + '_' +  ','.join(map(str,usd_invests)) + '_' + ','.join(map(str,balances_usd)) + '_2024-12-01_to_2025-02-28' + '.pckl', 'wb') # 'rb'
 pd.to_pickle(portfolios, f) # portfolios = pd.read_pickle(f)
-f.close()`
+f.close()
+```
 
 Crypto:
-`portfolios = {} # long only
+```python
+import pandas as pd
+
+portfolios = {} # long only
 up_down_moves = [50,100] # 10,20,40,
 bt_days = [5,10,15,20] #  ,
 sl_tsl_a_ps = [[-0.15,0.05,-0.0125],[-0.2,0.2,-0.05],[-0.3,0.5,-0.2]] # [-1,10,-5] # ,
@@ -231,10 +250,10 @@ for up_down_move in up_down_moves:
                             print(portfolio_name)
                             if portfolio_name in portfolios:
                                 continue
-                            portfolio = { # 100_100_15_[-0.3, 0.5, -0.2]_0.2_1_1000_1000
-                                'constants': {'base_pair': 'usdt', 'type': 'rr', 'up_down_move': up_down_move, 'days': days, 'sl': sl, 'tsl_a': tsl_a, 'tsl_p': tsl_p, 'usdt_invest': usdt_invest, 'usdt_invest_min': 100, 'coins_to_analyze': coins_to_analyze, 'rank_rise_d_buy_limit': rank_rise_d_buy_limit, 'buy_date_gtrends_15d': False, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_kucoin_usdt_24h_vol': False, 'start_balance': {'usdt': balance_usdt}, 'start_day': '2024-05-01'}, # assuming always enforcing btc_invest_min # maybe refactor move btc_invest and btc_invest_min out of constants since could be changing more frequently # maybe refactor coins_to_analyze to num_coins_to_analyze (but then have to worry about it being top num coins etc easier like this coins_to_analyze implicitly implies top x coins by market cap) # 'end_day_open_positions_binance_btc_24h_vol' # base_pair is for trading (balance, max_value, usdt_invest, usdt_invest_min, start_balance, back_testing), roi is in btc, keep track of both prices (usdt, btc) for roi calculation and optics
-                                'balance': {'usdt': balance_usdt}, # 'btc': 1.0 # {'btc': 1.0, 'max': {'btc': 1.0}}
-                                'max_value': {'usdt': float("NaN")}, # 1.07 is btc balance in Binance on 9/14/2020
+                            portfolio = {
+                                'constants': {'base_pair': 'usdt', 'type': 'rr', 'up_down_move': up_down_move, 'days': days, 'sl': sl, 'tsl_a': tsl_a, 'tsl_p': tsl_p, 'usdt_invest': usdt_invest, 'usdt_invest_min': 100, 'coins_to_analyze': coins_to_analyze, 'rank_rise_d_buy_limit': rank_rise_d_buy_limit, 'buy_date_gtrends_15d': False, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_kucoin_usdt_24h_vol': False, 'start_balance': {'usdt': balance_usdt}, 'start_day': '2024-05-01'},
+                                'balance': {'usdt': balance_usdt},
+                                'max_value': {'usdt': float("NaN")},
                                 'open': pd.DataFrame(columns=['symbol', 'position', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'current_date', 'current_price(btc)', 'current_roi(btc)', 'kucoin_usdt_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).astype({'symbol': 'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'buy_price(btc)': 'float64', 'balance': 'float64', 'current_date': 'datetime64[ns]', 'current_price(btc)': 'float64', 'current_roi(btc)': 'float64', 'kucoin_usdt_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price(btc)': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}), # 'binance_btc_24h_vol(btc)'
                                 'sold': pd.DataFrame(columns=['coin', 'symbol', 'position', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'sell_date', 'sell_price', 'sell_price(btc)', 'roi(btc)', 'kucoin_usdt_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).astype({'coin': 'object', 'symbol': 'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'buy_price(btc)': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'sell_price(btc)': 'float64', 'roi(btc)': 'float64', 'kucoin_usdt_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price(btc)': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}) # 'binance_btc_24h_vol(btc)'
                             }
@@ -265,16 +284,26 @@ for portfolio_name, portfolio in portfolios.items():
     if portfolio_name in portfolios_updated:
         continue
     # make sure start_day is the last day the previous portfolios were run - max(bt_days)
-    portfolios_updated[portfolio_name] = crypto.run_portfolio_rr(portfolio=new_portfolio, start_day=datetime.strptime('2024_07_29 17:00:00', '%Y_%m_%d %H:%M:%S'), end_day=datetime.strptime('2024_08_20 17:00:00', '%Y_%m_%d %H:%M:%S'), rr_sell=True, paper_trading=True, back_testing=True)`
+    portfolios_updated[portfolio_name] = crypto.run_portfolio_rr(portfolio=new_portfolio, start_day=datetime.strptime('2024_07_29 17:00:00', '%Y_%m_%d %H:%M:%S'), end_day=datetime.strptime('2024_08_20 17:00:00', '%Y_%m_%d %H:%M:%S'), rr_sell=True, paper_trading=True, back_testing=True)
+
+# Saving portfolio values to data (make sure that dates reflect start and end date):
+f = open('data/crypto/saved_portfolio_backups/back_testing/' + 'portfolios_rr_kucoin_' + ','.join(map(str,up_down_moves)) + '_' + ','.join(map(str,bt_days)) + \
+'_' + ','.join(map(str,sl_tsl_a_ps)) + '_' +  ','.join(map(str,usdt_invests)) + '_' + ','.join(map(str,balances_usdt)) + '_' + \
+','.join(map(str,coins_to_analyzes)) + '_' + ','.join(map(str,rank_rise_d_buy_limits)) +  '_2024-05-01_to_2024-06-27' + '.pckl', 'wb') #   'rb' #
+pd.to_pickle(portfolios, f) # portfolios = pd.read_pickle(f) # _updated
+f.close()
+```
 
 ## Checking Stocks Senate trade data
 
-`df_tickers_sp500 = stocks._fetch_data(stocks.get_sp500_ranked_tickers_by_marketbeat, params={}, error_str=" - No s&p 500 tickers data from Market Beat on: " + str(datetime.now()), empty_data = pd.DataFrame())
-senate_timestamps_and_tickers_inflows_and_outflows = stocks._fetch_data(stocks.get_senate_timestamps_and_tickers_inflows_and_outflows_by_month_for_stocks, params={'stocks_list': list(df_tickers_sp500.index)}, error_str=" - Issues with senate timestamps and tickers inflows and outflows by month data from FMP on: " + str(datetime.now()), empty_data = pd.DataFrame())`
+```python
+df_tickers_sp500 = stocks._fetch_data(stocks.get_sp500_ranked_tickers_by_marketbeat, params={}, error_str=" - No s&p 500 tickers data from Market Beat on: " + str(datetime.now()), empty_data = pd.DataFrame())
+senate_timestamps_and_tickers_inflows_and_outflows = stocks._fetch_data(stocks.get_senate_timestamps_and_tickers_inflows_and_outflows_by_month_for_stocks, params={'stocks_list': list(df_tickers_sp500.index)}, error_str=" - Issues with senate timestamps and tickers inflows and outflows by month data from FMP on: " + str(datetime.now()), empty_data = pd.DataFrame())
+```
 
 ## Other Information
 
-* Picks up major holidays (will sleep during holidays like weekends)
+* Picks up major holidays (Stocks will sleep during holidays like weekends, Crypto will continue)
 
 * Sometimes deleting old portfolios won't work, ie portfolio_rr_50_-50_20_-0.2_0.2_-0.05_2000_100_True_False_False_{'usd'/ 10000}_2024-12-01_to_2025-11-14.pckl won't be properly replaced with saved portfolio on 2025-11-17 and you'll have to manually delete old files such as this one
 

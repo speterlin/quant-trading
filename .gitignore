@@ -8,7 +8,7 @@ accomplishments/
 costs/
 
 # Ignore the default SQLite database.
-/data/*
+data/
 /db/*.sqlite3-shm
 /db/*.sqlite3-wal
 /db/*.sqlite3-journal
