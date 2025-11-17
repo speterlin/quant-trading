@@ -1,8 +1,8 @@
 resources/
 commit_message.txt
 
-# Ignore accomplishments
-accomplishments/
+# Ignore accomplishments large files
+accomplishments/Matrix like requests response.mp4
 
 # Ignore costs
 costs/
