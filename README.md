@@ -1,26 +1,26 @@
 # quant-trading
 
-A Python module for a suite of quant-trading opportunities. Run the python script (in a python file) as shown below (in a quant-trading root directory) in a virtual environment (make sure it's running on Python 3.12+ to be able to run most up-to-date AI) on a spare computer running 24/7 or a hosted service like Heroku (scheduler for executing market checks, data downloads, algorithm runs) and AWS (for storing data) for automated trading.
+Python modules for a suite of quant-trading opportunities in stocks and crypto. Run the python script (in a python file) as shown below (in a quant-trading root directory) in a virtual environment (make sure it's running on Python 3.12+ to be able to run most up-to-date AI) on a spare computer running 24/7 or a hosted service like Heroku (scheduler for executing market checks, data downloads, algorithm runs) and AWS (for storing data) for automated trading.
 
-For easy implementation create a virtual Python environment with up-to-date Python (3.12+) and appropriate modules for data download and analysis and brokerage trading via pip. Then download modules stocks.py and crypto.py (in this env/lib/python3.12/site-packages/ directory) and place them in your env/lib/python<<python_version>>/site-packages/ directory alongside your personal.py file for easy import and make sure function calls work with your modules (use modules I use for easy implementation).
+For easy implementation create a virtual Python environment with up-to-date Python (3.12+) and appropriate modules for data download and analysis and brokerage trading via pip. Then download modules stocks.py and crypto.py (in this `env/lib/python3.12/site-packages/` directory) and place them in your `env/lib/python<<python_version>>/site-packages/` directory alongside your personal.py file for easy import and make sure function calls work with your modules (use modules I use for easy implementation).
 
-Don't run active terminals on different computers from same directory (causes errors like when ran function crypto.get_coin_data resulted in losing locally - in env - installed pycoingecko). Update modules every so often. Don't interrupt / restart script when power / wifi is out since some clients (like BinanceClient()) will cause error which is necessary to run upon initiation. Scripts are meant to run even without wifi (will just be sleeping / checking for data - depending on time of day - and returning logs that indicate API errors). Scripts should be restarted at minimum every few months to ensure up-to-date software and clear cache / working memory and every year to ensure current holidays are taken into account.
+Don't run active terminals on different computers from same directory (can do this with icloud, causes errors like when ran function crypto.get_coin_data resulted in losing locally - in env - installed pycoingecko). Update modules every so often. Don't interrupt / restart script when power / wifi is out since some clients (like BinanceClient()) will cause error which is necessary to run upon initiation. Scripts are meant to run even without wifi (will just be sleeping / checking for data - depending on time of day - and returning logs that indicate API errors). Scripts should be restarted at minimum every few months to ensure up-to-date software and clear cache / working memory and every year to ensure current holidays are taken into account.
 
-Backtest algorithms with different parameters (parameters in this directory are chosen based on quant-trading readings from Medium regarding most common practices) over saved data to see which algorithm and parameter combination work best for the period of time you backtest over which you deem to reflect current market conditions.
+Backtest algorithms with different parameters (algorithms and parameters in this directory are chosen based on quant-trading readings from Medium.com - read my article regarding the subject [How I More Than 2xd My Quant Fund In A Year By Building a Trading Bot](https://medium.com/@speterlin12/how-i-more-than-2xd-my-quant-fund-in-a-year-by-building-a-trading-bot-919930cd29d) - regarding most common algorithms and parameters people use with success - simpler is generally better for retail traders due to lack of data and connection speed in comparison to Hedge Funds and Quant Trading firms) over saved data to see which algorithm and parameter combination work best for the period of time you backtest over which you deem to reflect current market conditions.
 
-Set up your automated environment to download stocks data every night with an API data brokerage of your choosing (this module is currently set up for Financial Modeling Prep $20/mo for stocks, CoinMarketCap $0/mo for crypto). Then run the data through your current algorithm after data is downloaded, and then execute trades via an API trading brokerage of your choosing (this module is currently using Alpaca for stocks, Kucoin - no real trading after new regulations in 2024-09 - for crypto) after the algorithm picks stocks to buy / sell. Stock trading is denominated is USD base, crypto trading is denominated in USDT base but traded relative to BTC price (ie VET loses 15% relative to BTC - VET-BTC price - then Stop-Loss triggers a VET sell on that portfolio in VET-USDT). Crypto is traded relative to BTC since BTC is considered a benchmark for crypto vs. alt-coins and BTC was the coin you wanted to grow (vs. USDT / other stablecoins) especially if you wanted to stay long-term in crypto and when most major exchanges had majority listings in -BTC until regulations on major exchanges came into effect (trading in specific countries).
+Set up your automated environment to download stocks data every night with an API data brokerage of your choosing (this module is currently set up for Financial Modeling Prep $20/mo for stocks, CoinMarketCap $0/mo for crypto). Then run the data through your current algorithm after data is downloaded, and then execute trades via an API trading brokerage of your choosing (this module is currently using Alpaca for stocks which is margin trading - 2x your deposit, Kucoin - no real trading after new regulations in 2024-09 - for crypto) after the algorithm picks stocks to buy / sell. Stock trading is denominated is USD base, crypto trading is denominated in USDT base but traded relative to BTC price (ie VET loses 15% relative to BTC - VET-BTC price - then Stop-Loss triggers a VET sell on that portfolio in VET-USDT). Crypto is traded relative to BTC since BTC is considered a benchmark for crypto vs. alt-coins and BTC is / was the coin you want to grow (vs. USDT / other stablecoins) especially if you want to stay long-term in crypto and historically most major exchanges had majority listings in -BTC until regulations on major exchanges came into effect (trading in specific countries).
 
 ## Running the Python script in virtual environment (quant-trading directory)
 
 quant-trading directory is in icloud so I can access / change code from other computers without having to push / pull git. I also access my spare computer which runs (like a server) 24/7 via Chrome Remote Desktop (highly recommend if using a spare computer to access that computer from another labtop to deal with issues like restarting if python scripts all of a sudden freeze or run into unforeseen errors - happens more often than you think - or to get rid of working memory / cache which takes over the storage of that computer).
 
-This script (below) is run after virtual environment is properly set up, personal module is set up (with all of your base urls, keys, secret identities and auth tokens variables for your APIs) and located in env/lib/python<<python_version>>/site-packages/personal.py (like where stocks.py and crypto.py are located so personal can be imported and variables called like personal.<<variable_name>>).
+This script (below) is run after virtual environment is properly set up, personal module is set up (with all of your base urls, keys, secret identities and auth tokens variables for your APIs) and located in `env/lib/python<<python_version>>/site-packages/personal.py` (like where stocks.py and crypto.py are located so personal can be imported and variables called like personal.<<variable_name>>).
 
 Stocks:
-(env) ~/icloud/quant-trading (master) $ python programs/stocks/stocks_alpaca_<<your_username>>.py
+`(env) ~/icloud/quant-trading (master) $ python programs/stocks/stocks_alpaca_<<your_username>>.py`
 
 Crypto:
-(env) ~/icloud/quant-trading (master) $ python programs/crypto/crypto_kucoin_<<your_user_name>>.py
+`(env) ~/icloud/quant-trading (master) $ python programs/crypto/crypto_kucoin_<<your_user_name>>.py`
 
 ## Python virtual environment (quant-trading directory requirements.txt)
 
@@ -28,9 +28,7 @@ Your virtual environment should have installed and up-to-date modules necessary 
 
 ## Python script for Stocks (programs/stocks/stocks_alpaca_<<your_username>>.py)
 
-You should have multiple accounts with the brokerage you trade with so you can run multiple real trading (paper_trading=False) scripts, in this case account 1: <<your_username>> and account 2: <<your_other_username>>, both with Alpaca. You can paper_trade multiple scripts off one account if you set stocks.portfolio_trading(portfolio=portfolio, paper_trading_on_used_account=True, ...) which doesn't paper_trade on Alpaca / Kucoin itself just in your virtual environment. Twilio is only necessary if you want text notifications to your phone (you'll need to set up personal.twilio_phone_to and personal.twilio_phone_from numbers with Twilio).
-
-
+You should have multiple accounts with the brokerage you trade with so you can run multiple real trading (paper_trading=False) scripts, in this case account 1: <<your_username>> and account 2: <<your_other_username>>, both with Alpaca. You can paper_trade multiple scripts off one account if you set `stocks.portfolio_trading(portfolio=portfolio, paper_trading_on_used_account=True, ...)` which doesn't paper_trade on Alpaca / Kucoin itself just in your virtual environment. Twilio is only necessary if you want text notifications to your phone (you'll need to set up personal.twilio_phone_to and personal.twilio_phone_from numbers with Twilio).
 
 ```python
 import stocks # always run from quant-trading root directory (/Library/Mobile Documents/com~apple~CloudDocs/quant-trading or most recent /icloud/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory
@@ -58,7 +56,7 @@ stocks.portfolio_account = "alpaca_<<your_username>>"
 portfolio = stocks.get_saved_portfolio_backup("portfolio_rr_50_-50_20_-0.2_0.2_-0.05_2000_100_True_False_False_{'usd': 10000}_2024-12-01_to_" + datetime.now().strftime('%Y-%m-%d'))
 
 # BE CAREFUL, paper_trading: update to current value (to reflect current trading, especially when need to restart the script ensure paper_trading reflects last paper_trading value), portfolio_usd_value_negative_change_from_max_limit (variable not listed since keep at default that reflects a Stop-Loss on your entire portfolio, default is -0.3, meaning that if your portfolio loses 30% relative to it's max value it will automatically panic sell negative roi assets and set paper_trading=True and continue paper_trading=True until current assets >= portfolio_max_value*(1-0.3) and current_roi >= 0.045),  portfolio_current_roi_restart: a variable that if paper_trading=True (and 'engaged': True) reflects when the python script changes to paper_trading=False (when current_roi >= 0.045 in this example), download_and_save_tickers_data: have to ensure that one portfolio_trading instance is saving data (don't want all of your scripts to be saving data, just one and then the other scripts wait for the data to be saved and execute their algorithm runs on that saved data)
-stocks.portfolio_trading(portfolio=portfolio, paper_trading=False, portfolio_current_roi_restart={'engaged': False, 'limit': 0.045}, download_and_save_tickers_data=True)`
+stocks.portfolio_trading(portfolio=portfolio, paper_trading=False, portfolio_current_roi_restart={'engaged': False, 'limit': 0.045}, download_and_save_tickers_data=True)
 ```
 
 ## Another Python script for Stocks (with AI trading, programs/stocks/stocks_tngaia_alpaca_<<your_other_username>>.py)
@@ -129,11 +127,11 @@ from datetime import datetime # , timedelta # only import timedelta when need to
 # make sure to change start_day of portfolio['constants'] before running
 portfolio = crypto.get_saved_portfolio_backup("portfolio_usdt_rr_10_-10_20_-0.3_0.5_-0.2_1000_100_1000_1000_True_False_False_{'usdt': 10000}_2023-03-12_to_" + datetime.now().strftime('%Y-%m-%d'))
 
-# BE CAREFUL, update to current paper_trading, portfolio_btc_value_negative_change_from_max_limit, portfolio_current_roi_restart
+# BE CAREFUL, update to current paper_trading, portfolio_btc_value_negative_change_from_max_limit, portfolio_current_roi_restart, crypto has more volatility which is why portfolio_current_roi_restart limit value is higher
 crypto.portfolio_trading(portfolio=portfolio, exchange="kucoin", paper_trading=True, portfolio_usdt_value_negative_change_from_max_limit=-0.05, portfolio_current_roi_restart={'engaged': True, 'limit': 0.90}, download_and_save_coins_data=True)`
 ```
 
-## Checking asset value in virtual Python environment (calling Python and then entering virtual Python environment as opposed to running a script with python <<directory_path/file_name.py>>) after manually line-by-line importing necessary modules listed in appropriate script like Python script for Stocks programs/stocks/stocks_alpaca_<<your_username>>.py to properly set up that Python environment
+## Checking assets value in virtual Python environment (calling Python and then entering virtual Python environment as opposed to running a script with python <<directory_path/file_name.py>>) after manually line-by-line importing necessary modules listed in appropriate script like Python script for Stocks programs/stocks/stocks_alpaca_<<your_username>>.py to properly set up that Python environment
 
 Stocks:
 ```python
@@ -189,7 +187,7 @@ for up_down_move in up_down_moves:
                         'open': pd.DataFrame(columns=['position', 'buy_date', 'buy_price', 'balance', 'current_date', 'current_price', 'current_roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'current_date': 'datetime64[ns]', 'current_price': 'float64', 'current_roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}),
                         'sold': pd.DataFrame(columns=['ticker', 'position', 'buy_date', 'buy_price', 'balance', 'sell_date', 'sell_price', 'roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'ticker': 'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'})
                     }
-                    portfolio_name = str(up_down_move) + ("_" + str(-up_down_move) if portfolio['constants']['type'] not in ['tilupccu', 'oair', 'senate_trading'] else "") + "_" + str(days) + "_" + str(sl_tsl_a_p) + "_" + str(usd_invest) + "_" + str(balance_usd) # + "_sl_"  + "_tsl_a_"  + "_p_"  + "_usd_invest_" # maybe refactor zr is not really an equivalent down_move more of a sell if rating turns toward sell
+                    portfolio_name = str(up_down_move) + ("_" + str(-up_down_move) if portfolio['constants']['type'] not in ['tilupccu', 'oair', 'senate_trading'] else "") + "_" + str(days) + "_" + str(sl_tsl_a_p) + "_" + str(usd_invest) + "_" + str(balance_usd) # + "_sl_"  + "_tsl_a_"  + "_p_"  + "_usd_invest_"
                     print(portfolio_name)
                     if portfolio_name in portfolios:
                         continue
@@ -217,7 +215,7 @@ for portfolio_name, portfolio in portfolios.items():
         continue
     portfolios_updated[portfolio_name] = stocks.run_portfolio(portfolio=new_portfolio, start_day=datetime.strptime('2025_01_18 13:00:00', '%Y_%m_%d %H:%M:%S'), end_day=datetime.strptime('2025_03_06 13:00:00', '%Y_%m_%d %H:%M:%S'), paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 420, 'days': 20}, tickers_with_stock_splits=tickers_with_stock_splits) # ,
 
-# Saving portfolio values to data (make sure that dates reflect start and end date):
+# Saving portfolios dict to data (make sure that dates reflect start and end date):
 f = open('data/stocks/saved_portfolio_backups/back_testing/' + 'portfolios_' + type + '_' + ','.join(map(str,up_down_moves)) + '_' + ','.join(map(str,bt_days)) + \
  '_' + ','.join(map(str,sl_tsl_a_ps)) + '_' +  ','.join(map(str,usd_invests)) + '_' + ','.join(map(str,balances_usd)) + '_2024-12-01_to_2025-02-28' + '.pckl', 'wb') # 'rb'
 pd.to_pickle(portfolios, f) # portfolios = pd.read_pickle(f)
@@ -261,10 +259,10 @@ for up_down_move in up_down_moves:
 
 # List ROIs:
 kucoin_pairs_with_price_and_vol_current = crypto._fetch_data(crypto.get_kucoin_pairs, params={}, error_str=" - Kucoin get tickers error on: " + str(datetime.now()), empty_data={})
-for portfolio_name, portfolio in portfolios_updated_2.items():
+for portfolio_name, portfolio in portfolios.items():
     portfolio_usdt_value = portfolio['balance']['usdt']
     for coin in portfolio['open'].index:
-        current_price_in_btc, symbol, balance = portfolio['open'].loc[coin, ['current_price(btc)', 'symbol', 'balance']]
+        symbol, balance = portfolio['open'].loc[coin, ['symbol', 'balance']]
         symbol_pair = symbol.upper() + '-USDT'
         price = kucoin_pairs_with_price_and_vol_current[symbol_pair]['price'] if symbol_pair in kucoin_pairs_with_price_and_vol_current else float("NaN")
         portfolio_usdt_value += price*balance
@@ -286,7 +284,7 @@ for portfolio_name, portfolio in portfolios.items():
     # make sure start_day is the last day the previous portfolios were run - max(bt_days)
     portfolios_updated[portfolio_name] = crypto.run_portfolio_rr(portfolio=new_portfolio, start_day=datetime.strptime('2024_07_29 17:00:00', '%Y_%m_%d %H:%M:%S'), end_day=datetime.strptime('2024_08_20 17:00:00', '%Y_%m_%d %H:%M:%S'), rr_sell=True, paper_trading=True, back_testing=True)
 
-# Saving portfolio values to data (make sure that dates reflect start and end date):
+# Saving portfolios dict to data (make sure that dates reflect start and end date):
 f = open('data/crypto/saved_portfolio_backups/back_testing/' + 'portfolios_rr_kucoin_' + ','.join(map(str,up_down_moves)) + '_' + ','.join(map(str,bt_days)) + \
 '_' + ','.join(map(str,sl_tsl_a_ps)) + '_' +  ','.join(map(str,usdt_invests)) + '_' + ','.join(map(str,balances_usdt)) + '_' + \
 ','.join(map(str,coins_to_analyzes)) + '_' + ','.join(map(str,rank_rise_d_buy_limits)) +  '_2024-05-01_to_2024-06-27' + '.pckl', 'wb') #   'rb' #
@@ -301,6 +299,20 @@ df_tickers_sp500 = stocks._fetch_data(stocks.get_sp500_ranked_tickers_by_marketb
 senate_timestamps_and_tickers_inflows_and_outflows = stocks._fetch_data(stocks.get_senate_timestamps_and_tickers_inflows_and_outflows_by_month_for_stocks, params={'stocks_list': list(df_tickers_sp500.index)}, error_str=" - Issues with senate timestamps and tickers inflows and outflows by month data from FMP on: " + str(datetime.now()), empty_data = pd.DataFrame())
 ```
 
+## Backtest over a single portfolio
+
+```python
+portfolio_senate_trading_test = {
+    'constants': {'type': 'senate_trading', 'up_down_move': 5, 'days': 30, 'sl': -0.2, 'tsl_a': 0.2, 'tsl_p': -0.05, 'usd_invest': 1000, 'usd_invest_min': 100, 'buy_date_gtrends_15d': False, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_fmp_24h_vol': False, 'start_balance': {'usd': 10000}, 'start_day': '2022-01-24'},
+    'balance': {'usd': 10000},
+    'max_value': {'usd': float("NaN")},
+    'open': pd.DataFrame(columns=['position', 'buy_date', 'buy_price', 'balance', 'current_date', 'current_price', 'current_roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'current_date': 'datetime64[ns]', 'current_price': 'float64', 'current_roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}),
+    'sold': pd.DataFrame(columns=['ticker', 'position', 'buy_date', 'buy_price', 'balance', 'sell_date', 'sell_price', 'roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'ticker': 'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'})
+}
+
+portfolio_senate_trading_test = stocks.run_portfolio(portfolio=portfolio_senate_trading_test, start_day=datetime.strptime('2022_01_24 13:00:00', '%Y_%m_%d %H:%M:%S'), end_day=datetime.strptime('2024_01_24 13:00:00', '%Y_%m_%d %H:%M:%S'), paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': False, 'time': 420, 'days': 20}, senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows, tickers_with_stock_splits=tickers_with_stock_splits)
+```
+
 ## Other Information
 
 * Picks up major holidays (Stocks will sleep during holidays like weekends, Crypto will continue)
@@ -309,7 +321,7 @@ senate_timestamps_and_tickers_inflows_and_outflows = stocks._fetch_data(stocks.g
 
 * CoinMarketCap will change their html every so often (probably to avoid scrapers), and you'll have to manually change crypto.py#get_coinmarketcap_coin_data() - span_price & dl_statistics = soup.find "class" element search identifiers
 
-* Services (quant-trading, saved financial & social data since 2020, backtesting, algorithms, incorporating data & financial APIs, personal remote quant-trading)
+* Services (personal remote / retail quant-trading, saved financial & social data since 2020, backtesting, algorithms, incorporating data & financial APIs)
 
 ## Contributing
 
@@ -323,4 +335,4 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/speter
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
+The modules are available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
