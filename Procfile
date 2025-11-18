@@ -1,1 +1,1 @@
-worker: python programs/crypto.py
+worker: programs/crypto/crypto_kucoin_speterlin12yahoo.py

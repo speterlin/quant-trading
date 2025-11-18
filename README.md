@@ -20,7 +20,7 @@ Stocks:
 `(env) ~/icloud/quant-trading (master) $ python programs/stocks/stocks_alpaca_<<your_username>>.py`
 
 Crypto:
-`(env) ~/icloud/quant-trading (master) $ python programs/crypto/crypto_kucoin_<<your_user_name>>.py`
+`(env) ~/icloud/quant-trading (master) $ python programs/crypto/crypto_kucoin_<<your_username>>.py`
 
 ## Python virtual environment (quant-trading directory requirements.txt)
 
