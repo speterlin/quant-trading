@@ -1,2 +1,3 @@
-*.py linguist-detectable=true
+env/lib/python3.12/site-packages/** linguist-vendored=false
+env/lib/python3.12/site-packages/** linguist-detectable=true
 *.txt linguist-detectable=true
