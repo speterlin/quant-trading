@@ -1,3 +1,2 @@
-env/lib/python3.12/site-packages/stocks.py linguist-detectable
-env/lib/python3.12/site-packages/crypto.py linguist-detectable
-requirements.txt linguist-detectable
+*.py linguist-detectable=true
+*.txt linguist-detectable=true
