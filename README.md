@@ -2,7 +2,7 @@
 
 Python modules for a suite of quant-trading opportunities in stocks and crypto. Run the python script (in a python file) as shown below (in a quant-trading root directory) in a virtual environment (make sure it's running on Python 3.12+ to be able to run most up-to-date AI) on a spare computer running 24/7 or a hosted service like Heroku (scheduler for executing market checks, data downloads, algorithm runs) and AWS (for storing data) for automated trading.
 
-For easy implementation create a virtual Python environment with up-to-date Python (3.12+) and appropriate modules for data download and analysis and brokerage trading via pip. Then download modules stocks.py and crypto.py (in this `env/lib/python3.12/site-packages/` directory) and place them in your `env/lib/python<<python_version>>/site-packages/` directory alongside your personal.py file for easy import and make sure function calls work with your modules (use modules I use for easy implementation).
+For easy implementation create a virtual Python environment with up-to-date Python (3.12+) and appropriate modules for data download and analysis and brokerage trading via pip. Then download modules `stocks.py` and `crypto.py` (in this `env/lib/python3.12/site-packages/` directory) and place them in your `env/lib/python<<python_version>>/site-packages/` directory alongside your `personal.py` file for easy import and make sure function calls work with your modules (use modules I use for easy implementation).
 
 Don't run active terminals on different computers from same directory (can do this with icloud, causes errors like when ran function crypto.get_coin_data resulted in losing locally - in env - installed pycoingecko). Update modules every so often. Don't interrupt / restart script when power / wifi is out since some clients (like BinanceClient()) will cause error which is necessary to run upon initiation. Scripts are meant to run even without wifi (will just be sleeping / checking for data - depending on time of day - and returning logs that indicate API errors). Scripts should be restarted at minimum every few months to ensure up-to-date software and clear cache / working memory and every year to ensure current holidays are taken into account.
 
@@ -14,7 +14,7 @@ Set up your automated environment to download stocks data every night with an AP
 
 quant-trading directory is in icloud so I can access / change code from other computers without having to push / pull git. I also access my spare computer which runs (like a server) 24/7 via Chrome Remote Desktop (highly recommend if using a spare computer to access that computer from another labtop to deal with issues like restarting if python scripts all of a sudden freeze or run into unforeseen errors - happens more often than you think - or to get rid of working memory / cache which takes over the storage of that computer).
 
-This script (below) is run after virtual environment is properly set up, personal module is set up (with all of your base urls, keys, secret identities and auth tokens variables for your APIs) and located in `env/lib/python<<python_version>>/site-packages/personal.py` (like where stocks.py and crypto.py are located so personal can be imported and variables called like personal.<<variable_name>>).
+This script (below) is run after virtual environment is properly set up, personal module is set up (with all of your base urls, keys, secret identities and auth tokens variables for your APIs) and located in `env/lib/python<<python_version>>/site-packages/personal.py` (like where `stocks.py` and `crypto.py` are located so personal can be imported and variables called like `personal.<<variable_name>>`).
 
 Stocks:
 `(env) ~/icloud/quant-trading (master) $ python programs/stocks/stocks_alpaca_<<your_username>>.py`
@@ -28,7 +28,7 @@ Your virtual environment should have installed and up-to-date modules necessary 
 
 ## Python script for Stocks (programs/stocks/stocks_alpaca_<<your_username>>.py)
 
-You should have multiple accounts with the brokerage you trade with so you can run multiple real trading (paper_trading=False) scripts, in this case account 1: <<your_username>> and account 2: <<your_other_username>>, both with Alpaca. You can paper_trade multiple scripts off one account if you set `stocks.portfolio_trading(portfolio=portfolio, paper_trading_on_used_account=True, ...)` which doesn't paper_trade on Alpaca / Kucoin itself just in your virtual environment. Twilio is only necessary if you want text notifications to your phone (you'll need to set up personal.twilio_phone_to and personal.twilio_phone_from numbers with Twilio).
+You should have multiple accounts with the brokerage you trade with so you can run multiple real trading (paper_trading=False) scripts, in this case account 1: `<<your_username>>` and account 2: `<<your_other_username>>`, both with Alpaca. You can paper_trade multiple scripts off one account if you set `stocks.portfolio_trading(portfolio=portfolio, paper_trading_on_used_account=True, ...)` which doesn't paper_trade on Alpaca / Kucoin itself just in your virtual environment. Twilio is only necessary if you want text notifications to your phone (you'll need to set up personal.twilio_phone_to and personal.twilio_phone_from numbers with Twilio).
 
 ```python
 import stocks # always run from quant-trading root directory (/Library/Mobile Documents/com~apple~CloudDocs/quant-trading or most recent /icloud/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory
@@ -317,9 +317,9 @@ portfolio_senate_trading_test = stocks.run_portfolio(portfolio=portfolio_senate_
 
 * Picks up major holidays (Stocks will sleep during holidays like weekends, Crypto will continue)
 
-* Sometimes deleting old portfolios won't work, ie portfolio_rr_50_-50_20_-0.2_0.2_-0.05_2000_100_True_False_False_{'usd'/ 10000}_2024-12-01_to_2025-11-14.pckl won't be properly replaced with saved portfolio on 2025-11-17 and you'll have to manually delete old files such as this one
+* Sometimes deleting old portfolios won't work, ie `portfolio_rr_50_-50_20_-0.2_0.2_-0.05_2000_100_True_False_False_{'usd'/ 10000}_2024-12-01_to_2025-11-14.pckl` won't be properly replaced with saved portfolio on 2025-11-17 and you'll have to manually delete old files such as this one
 
-* CoinMarketCap will change their html every so often (probably to avoid scrapers), and you'll have to manually change crypto.py#get_coinmarketcap_coin_data() - span_price & dl_statistics = soup.find "class" element search identifiers
+* CoinMarketCap will change their html every so often (probably to avoid scrapers), and you'll have to manually change `crypto.py#get_coinmarketcap_coin_data() - span_price & dl_statistics = soup.find "class"` element search identifiers
 
 * Services (personal remote / retail quant-trading, saved financial & social data since 2020, backtesting, algorithms, incorporating data & financial APIs)
 
