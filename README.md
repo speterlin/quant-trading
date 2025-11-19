@@ -8,13 +8,13 @@ Don't run active terminals on different computers from same directory (can do th
 
 Backtest algorithms with different parameters (algorithms and parameters in this directory are chosen based on quant-trading readings from Medium.com - read my article regarding the subject [How I More Than 2xd My Quant Fund In A Year By Building a Trading Bot](https://medium.com/@speterlin12/how-i-more-than-2xd-my-quant-fund-in-a-year-by-building-a-trading-bot-919930cd29d) - regarding most common algorithms and parameters people use with success - simpler is generally better for retail traders due to lack of data and connection speed in comparison to Hedge Funds and Quant Trading firms) over saved data to see which algorithm and parameter combination work best for the period of time you backtest over which you deem to reflect current market conditions.
 
-Set up your automated environment to download stocks data every night with an API data brokerage of your choosing (this module is currently set up for Financial Modeling Prep $20/mo for stocks, CoinMarketCap $0/mo for crypto). Then run the data through your current algorithm after data is downloaded, and then execute trades via an API trading brokerage of your choosing (this module is currently using Alpaca for stocks which is margin trading - 2x your deposit, Kucoin - no real trading after new regulations in 2024-09 - for crypto) after the algorithm picks stocks to buy / sell. Stock trading is denominated is USD base, crypto trading is denominated in USDT base but traded relative to BTC price (ie VET loses 15% relative to BTC - VET-BTC price - then Stop-Loss triggers a VET sell on that portfolio in VET-USDT). Crypto is traded relative to BTC since BTC is considered a benchmark for crypto vs. alt-coins and BTC is / was the coin you want to grow (vs. USDT / other stablecoins) especially if you want to stay long-term in crypto and historically most major exchanges had majority listings in -BTC until regulations on major exchanges came into effect (trading in specific countries).
+Set up your automated environment to download stocks data every night with an API data brokerage of your choosing (this module is currently set up for Financial Modeling Prep $20/mo for stocks, CoinMarketCap $0/mo for crypto). Then run the data through your current algorithm after data is downloaded, and then execute trades via an API trading brokerage of your choosing (this module is currently using Alpaca for stocks which is margin trading - 2x your deposit, Kucoin - no real trading after new regulations in 2024-09 - for crypto) after the algorithm picks stocks to buy / sell. Stock trading is denominated in USD base, crypto trading is denominated in USDT base but traded relative to BTC price (ie VET loses 15% relative to BTC - VET-BTC price - then Stop-Loss triggers a VET sell on that portfolio in VET-USDT). Crypto is traded relative to BTC since BTC is considered a benchmark for crypto vs. alt-coins and BTC is / was the coin you want to grow (vs. USDT / other stablecoins) especially if you want to stay long-term in crypto and historically most major exchanges had majority listings in -BTC until regulations on major exchanges came into effect (trading in specific countries).
 
 ## Running the Python script in virtual environment (quant-trading directory)
 
 quant-trading directory is in icloud so I can access / change code from other computers without having to push / pull git. I also access my spare computer which runs (like a server) 24/7 via Chrome Remote Desktop (highly recommend if using a spare computer to access that computer from another labtop to deal with issues like restarting if python scripts all of a sudden freeze or run into unforeseen errors - happens more often than you think - or to get rid of working memory / cache which takes over the storage of that computer).
 
-This script (below) is run after virtual environment is properly set up, personal module is set up (with all of your base urls, keys, secret identities and auth tokens variables for your APIs) and located in `env/lib/python<<python_version>>/site-packages/personal.py` (like where `stocks.py` and `crypto.py` are located so personal can be imported and variables called like `personal.<<variable_name>>`).
+This script (below) is run after virtual environment is properly set up, personal module is set up (with all of your base urls, keys, secret identities and auth tokens variables for your APIs) and located in `env/lib/python<<python_version>>/site-packages/personal.py` (like where `stocks.py` and `crypto.py` are located so personal can be imported and variables called like `personal.<<variable_name>>`). All code below (in this section and below sections) is run in an active virtual environment (run `source env/bin/activate` before running actual script or entering `python` to enter the virtual environment and enter code manually).
 
 Stocks:
 `(env) ~/icloud/quant-trading (master) $ python programs/stocks/stocks_alpaca_<<your_username>>.py`
@@ -52,7 +52,7 @@ from datetime import datetime # , timedelta # only import timedelta when need to
 # check that portfolio belongs to the correct account (<<your_other_username>> vs. <<your_username>>)
 stocks.portfolio_account = "alpaca_<<your_username>>"
 
-# make sure to check/change 'start_day', base_pair' and associated 'usdt' or 'btc' references of portfolio['constants'] etc. before running, portfolio name reflects algorithm type (rr = relative rank and parameters for that algorithm)
+# make sure to check/change 'start_day', 'currency' and associated 'starting_balance' and other references of portfolio['constants'] etc. before running, portfolio name reflects algorithm type (rr = relative rank and parameters for that algorithm)
 portfolio = stocks.get_saved_portfolio_backup("portfolio_rr_50_-50_20_-0.2_0.2_-0.05_2000_100_True_False_False_{'usd': 10000}_2024-12-01_to_" + datetime.now().strftime('%Y-%m-%d'))
 
 # BE CAREFUL, paper_trading: update to current value (to reflect current trading, especially when need to restart the script ensure paper_trading reflects last paper_trading value), portfolio_usd_value_negative_change_from_max_limit (variable not listed since keep at default that reflects a Stop-Loss on your entire portfolio, default is -0.3, meaning that if your portfolio loses 30% relative to it's max value it will automatically panic sell negative roi assets and set paper_trading=True and continue paper_trading=True until current assets >= portfolio_max_value*(1-0.3) and current_roi >= 0.045),  portfolio_current_roi_restart: a variable that if paper_trading=True (and 'engaged': True) reflects when the python script changes to paper_trading=False (when current_roi >= 0.045 in this example), download_and_save_tickers_data: have to ensure that one portfolio_trading instance is saving data (don't want all of your scripts to be saving data, just one and then the other scripts wait for the data to be saved and execute their algorithm runs on that saved data)
@@ -131,7 +131,7 @@ portfolio = crypto.get_saved_portfolio_backup("portfolio_usdt_rr_10_-10_20_-0.3_
 crypto.portfolio_trading(portfolio=portfolio, exchange="kucoin", paper_trading=True, portfolio_usdt_value_negative_change_from_max_limit=-0.05, portfolio_current_roi_restart={'engaged': True, 'limit': 0.90}, download_and_save_coins_data=True)`
 ```
 
-## Checking assets value in virtual Python environment (calling Python and then entering virtual Python environment as opposed to running a script with python <<directory_path/file_name.py>>) after manually line-by-line importing necessary modules listed in appropriate script like Python script for Stocks programs/stocks/stocks_alpaca_<<your_username>>.py to properly set up that Python environment
+## Checking assets value in virtual Python environment (calling python and then entering virtual Python environment as opposed to running a script with python <<directory_path/file_name.py>>) after manually line-by-line importing necessary modules listed in appropriate script like Python script for Stocks programs/stocks/stocks_alpaca_<<your_username>>.py to properly set up that Python environment
 
 Stocks:
 ```python
@@ -146,6 +146,10 @@ print(str(assets) + "\nTotal Current Value: " + str(assets['current_value'].sum(
 ```
 
 ## Backtesting in virtual Python environment (like stated above)
+
+Both stocks and crypto backtesting don't take into effect a -0.3 Stop-Loss on the entire portfolio (this would add compute time and might subtract from the scientific nature of figuring out which portfolio algorithm and parameter combination performs best in the time period).
+
+Algorithms are listed in stocks.py#run_portfolio and crypto.py#run_portfolio_rr (only 1 algorithm for crypto since not much reading on different crypto algorithms and rr is simple and historically effective) and parameters are listed within each method (ie stocks.py#run_portfolio_top_n_gainers_ai_analysis) as all cap values.
 
 Stocks:
 ```python
@@ -187,7 +191,7 @@ for up_down_move in up_down_moves:
                         'open': pd.DataFrame(columns=['position', 'buy_date', 'buy_price', 'balance', 'current_date', 'current_price', 'current_roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'current_date': 'datetime64[ns]', 'current_price': 'float64', 'current_roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}),
                         'sold': pd.DataFrame(columns=['ticker', 'position', 'buy_date', 'buy_price', 'balance', 'sell_date', 'sell_price', 'roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'ticker': 'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'})
                     }
-                    portfolio_name = str(up_down_move) + ("_" + str(-up_down_move) if portfolio['constants']['type'] not in ['tilupccu', 'oair', 'senate_trading'] else "") + "_" + str(days) + "_" + str(sl_tsl_a_p) + "_" + str(usd_invest) + "_" + str(balance_usd) # + "_sl_"  + "_tsl_a_"  + "_p_"  + "_usd_invest_"
+                    portfolio_name = str(up_down_move) + ("_" + str(-up_down_move) if portfolio['constants']['type'] not in ['tilupccu', 'air', 'tngaia',  'senate_trading'] else "") + "_" + str(days) + "_" + str(sl_tsl_a_p) + "_" + str(usd_invest) + "_" + str(balance_usd) # + "_sl_"  + "_tsl_a_"  + "_p_"  + "_usd_invest_"
                     print(portfolio_name)
                     if portfolio_name in portfolios:
                         continue
@@ -270,7 +274,7 @@ for portfolio_name, portfolio in portfolios.items():
     print(portfolio_name + ", USDT Value: " + str(portfolio_usdt_value) + ", USDT Value Growth: " + str(portfolio_usdt_value_growth))
 
 # Check outlier individual portfolios ('10_-10_20_[-0.3, 0.5, -0.2]_1000_10000_1000_1000' is an example portfolio):
-portfolios['10_-10_20_[-0.3, 0.5, -0.2]_1000_10000_1000_1000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['symbol', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi','current_roi(btc)']]
+portfolios['10_-10_20_[-0.3, 0.5, -0.2]_1000_10000_1000_1000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['symbol', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_price(btc)', 'current_roi', 'current_roi(btc)']]
 portfolios['10_-10_20_[-0.3, 0.5, -0.2]_1000_10000_1000_1000']['sold'].sort_values('roi(btc)', inplace=False, ascending=False)[['symbol', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'sell_price(btc)', 'roi(btc)']]
 
 # if want to update a saved portfolios dict to current dates and not iterate over past values (make sure to check dates):
