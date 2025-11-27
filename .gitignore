@@ -7,22 +7,16 @@ accomplishments/Matrix like requests response.mp4
 # Ignore costs
 costs/
 
-# Ignore the default SQLite database.
+# Ignore stock & crypto data and the default SQLite database.
 data/
 /db/*.sqlite3-shm
 /db/*.sqlite3-wal
 /db/*.sqlite3-journal
 
-# ignore all packages except for crypto.py & stocks.py
-env/*
-!env/lib
-env/lib/*
-!env/lib/python3.12
-env/lib/python3.12/*
-!env/lib/python3.12/site-packages
-env/lib/python3.12/site-packages/*
-!env/lib/python3.12/site-packages/crypto.py
-!env/lib/python3.12/site-packages/stocks.py
+# Virtual environments
+.venv/
+venv/
+env/
 
 # Ignore personal.py with all of your base urls, keys, secret identities and auth tokens for your APIs (precautionary since already ignored in above call)
 personal.py
