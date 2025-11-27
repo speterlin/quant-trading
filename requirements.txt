@@ -1,5 +1,5 @@
-setuptools
-pandas
+setuptools>=61.0
+pandas>=2.0
 numpy
 pycoingecko
 datetime
@@ -16,5 +16,10 @@ urllib3
 alpaca-trade-api --no-dependencies
 alpaca-py
 pytrends
+openai
+langchain-openai
+google-generativeai
+unidecode
+fake_headers
 pytz
 ndg-httpsclient
