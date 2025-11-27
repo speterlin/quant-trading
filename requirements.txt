@@ -13,7 +13,7 @@ alpha_vantage
 aiohttp
 websockets
 urllib3
-alpaca-trade-api --no-dependencies
+alpaca-trade-api
 alpaca-py
 pytrends
 openai
