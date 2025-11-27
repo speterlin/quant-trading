@@ -7,7 +7,7 @@ accomplishments/Matrix like requests response.mp4
 # Ignore costs
 costs/
 
-# Ignore stock & crypto data and the default SQLite database.
+# Ignore stock & crypto data (including portfolio backups) and the default SQLite database.
 data/
 /db/*.sqlite3-shm
 /db/*.sqlite3-wal
