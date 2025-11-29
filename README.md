@@ -1,8 +1,8 @@
-# quant-trading
+ChatGPT# quant-trading
 
 A Python environment integrating self-made [speterlin-stocks](https://github.com/speterlin/speterlin-stocks) and [speterlin-crypto](https://github.com/speterlin/speterlin-crypto) packages for automated quant-trading. Run the python script (in a python file) as shown below (in a quant-trading root directory) in a virtual environment (make sure it's running on Python 3.12+ to be able to run most up-to-date AI) on a spare computer running 24/7 or a hosted service like Heroku (scheduler for executing market checks, data downloads, algorithm runs) and AWS (for storing data) for automated trading.
 
-For easy implementation create a Python virtual environment with up-to-date Python (3.12+) and pip. Then download packages `speterlin-stocks` and `speterlin-crypto` (pip automatically downloads their dependencies) and make sure they show up as directories in your `env/lib/python<<python_version>>/site-packages/` directory (as `speterlin_stocks` and `speterlin_crypto`) alongside a `personal.py` module you create there (an empty `.py` file) and other dependency packages for easy import.
+For easy implementation create a directory with a Python virtual environment with up-to-date Python (3.12+) and pip. According to ChatGPT: 'Don’t store virtual environments inside iCloud folders, iCloud will corrupt venvs, symlinks, and compiled packages'. Then download packages `speterlin-stocks` and `speterlin-crypto` (pip automatically downloads their dependencies) and make sure they show up as directories in your `env/lib/python<<python_version>>/site-packages/` directory (as `speterlin_stocks` and `speterlin_crypto`) alongside a `personal.py` module you create there (an empty `.py` file) and other dependency packages for easy import.
 
 Set up accounts with a data API (`speterlin-stocks` is currently set up for Financial Modeling Prep $20/mo for stocks, `speterlin-crypto` is currently set up for CoinMarketCap $0/mo for crypto - no account needed). Set up accounts with a brokerage/exchange API (`speterlin-stocks` is currently using Alpaca for stocks which is margin trading - 2x your deposit, Kucoin - no real trading after new regulations in 2024-09 - for crypto). Set up accounts with an AI analysis API (`speterlin-stocks` is using OpenAI and Google Gemini-Pro, `speterlin-crypto` is not using). If you decide to use different APIs (for data, brokerage/exchange, AI analysis) of your choosing you'll have to fork the appropriate `speterlin-stocks` or `speterlin-crypto` repo and add functions to integrate them into the logic flow. Make sure to label and store all of your base urls, keys, secret identities and auth tokens variables for your APIs in the `personal.py` module and .gitignore this module from any publicly sharing.
 
@@ -12,19 +12,19 @@ Then set up and run scripts (like the ones below) in your automated environment 
 
 Stock trading is denominated in USD base, crypto trading is denominated in USDT base but traded relative to BTC price (ie VET loses 15% relative to BTC - VET-BTC price - then Stop-Loss triggers a VET sell on that portfolio in VET-USDT). Crypto is traded relative to BTC since BTC is considered a benchmark for crypto vs. alt-coins and BTC is / was the coin you want to grow (vs. USDT / other stablecoins) especially if you want to stay long-term in crypto and historically most major exchanges had majority listings in -BTC until regulations on major exchanges came into effect (trading in specific countries).
 
-Don't run active terminals on different computers from same directory (can do this with icloud, causes errors like when ran function `crypto.get_coin_data` resulted in losing locally - in env - installed `pycoingecko`). Update / upgrade packages every so often. Don't interrupt / restart script when power / wifi is out since some clients (like `BinanceClient()`) will cause error which is necessary to run upon initiation. Scripts are meant to run even without wifi (will just be sleeping / checking for data - depending on time of day - and returning logs that indicate API errors). Scripts should be restarted at minimum every few months to ensure up-to-date software and clear working memory / cache or possibly more often if your algorithm is underperforming (depending on your strategy or how long you want to wait out bad times you might want to backtest and implement another algorithm) and every year to ensure current holidays are taken into account.
+Don't run active terminals on different computers from same directory (can do this with iCloud, causes errors like when ran function `crypto.get_coin_data` resulted in losing locally - in env - installed `pycoingecko`). Update / upgrade packages every so often. Don't interrupt / restart script when power / wifi is out since some clients (like `BinanceClient()`) will cause error which is necessary to run upon initiation. Scripts are meant to run even without wifi (will just be sleeping / checking for data - depending on time of day - and returning logs that indicate API errors). Scripts should be restarted at minimum every few months to ensure up-to-date software and clear working memory / cache or possibly more often if your algorithm is underperforming (depending on your strategy or how long you want to wait out bad times you might want to backtest and implement another algorithm) and every year to ensure current holidays are taken into account.
 
 ## Running the Python script in virtual environment (quant-trading directory)
 
-quant-trading directory is in icloud so I can access / change code from other computers without having to push / pull git. I also access my spare computer which runs (like a server) 24/7 via Chrome Remote Desktop (highly recommend if using a spare computer to access that computer from another labtop to deal with issues like restarting if python scripts all of a sudden freeze or run into unforeseen errors - happens more often than you think - or to get rid of working memory / cache which takes over the storage of that computer).
+My quant-trading directory is on GitHub so I can access / change code from other computers with pull / push git (not iCloud due to ChatGPT virtual environment warning mentioned above). I also access my spare computer which runs (like a server) 24/7 via Chrome Remote Desktop (highly recommend if using a spare computer to access that computer from another labtop to deal with issues like restarting if python scripts all of a sudden freeze or run into unforeseen errors - happens more often than you think - or to get rid of working memory / cache which takes over the storage of that computer).
 
 This script (below) is run after virtual environment is properly set up, personal module is set up and located in `env/lib/python<<python_version>>/site-packages/personal.py` (like where package directories `stocks_speterlin` and `stocks_crypto` are downloaded so `personal` module can be imported and variables called like `personal.<<variable_name>>`). All code below (in this section and below sections) is run in an active virtual environment (run `source env/bin/activate` before running actual script or entering `python` to enter the virtual environment shell and enter code manually).
 
 Stocks:
-`(env) ~/icloud/quant-trading (master) $ python programs/stocks/stocks_alpaca_<<your_username>>.py`
+`(env) ~/Developer/quant-trading (master) $ python programs/stocks/stocks_alpaca_<<your_username>>.py`
 
 Crypto:
-`(env) ~/icloud/quant-trading (master) $ python programs/crypto/crypto_kucoin_<<your_username>>.py`
+`(env) ~/Developer/quant-trading (master) $ python programs/crypto/crypto_kucoin_<<your_username>>.py`
 
 ## Python virtual environment (quant-trading directory requirements.txt)
 
@@ -35,7 +35,7 @@ Your virtual environment should have installed and up-to-date packages necessary
 You should have multiple accounts with the brokerage you trade with so you can run multiple real trading (paper_trading=False) scripts, in this case account 1: `<<your_username>>` and account 2: `<<your_other_username>>`, both with Alpaca. You can paper_trade multiple scripts off one account if you set `stocks.portfolio_trading(portfolio=portfolio, paper_trading_on_used_account=True, ...)` which doesn't paper_trade on Alpaca / Kucoin itself just in your virtual environment. Twilio is only necessary if you want text notifications to your phone (you'll need to set up `personal.twilio_phone_to` and `personal.twilio_phone_from` numbers with Twilio).
 
 ```python
-import speterlin_stocks as stocks # always run from quant-trading root directory (/Library/Mobile Documents/com~apple~CloudDocs/quant-trading or most recent /icloud/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory
+import speterlin_stocks.module1 as stocks # always run from quant-trading root directory (Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory
 
 import os
 import alpaca_trade_api as tradeapi
@@ -68,7 +68,7 @@ stocks.portfolio_trading(portfolio=portfolio, paper_trading=False, portfolio_cur
 tngaia is an acronym for what kind of algorithm the trading script incorporates, in this case Top-N Gainers AI Analysis (where n is a number set in parameters reflecting top-n gainers from the day to be analyzed by AI - OpenAI or Gemini Pro, both options are available in stocks package - for buy / sell opportunities executed at start of next trading day). Due to simplicity and pricing Gemini Pro is being used currently.
 
 ```python
-import speterlin_stocks as stocks # always run from quant-trading root directory (/Library/Mobile Documents/com~apple~CloudDocs/quant-trading or most recent /icloud/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory
+import speterlin_stocks.module1 as stocks # always run from quant-trading root directory (Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory
 
 import os
 import alpaca_trade_api as tradeapi
@@ -112,7 +112,7 @@ stocks.portfolio_trading(portfolio=portfolio, paper_trading=True, paper_trading_
 ## Python script for Crypto (programs/crypto/crypto_kucoin_<<your_username>>)
 
 ```python
-import speterlin_crypto as crypto # always run from quant-trading root directory (/Library/Mobile Documents/com~apple~CloudDocs/quant-trading or most recent /icloud/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory
+import speterlin_crypto.module1 as crypto # always run from quant-trading root directory (Developer/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory
 
 import personal
 # from binance.client import Client as BinanceClient # github: binance-exchange/python-binance # here and below: binance.exceptions.BinanceAPIException: APIError(code=0): Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received this message in error.
