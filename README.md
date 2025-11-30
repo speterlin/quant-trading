@@ -1,4 +1,4 @@
-ChatGPT# quant-trading
+# quant-trading
 
 A Python environment integrating self-made [speterlin-stocks](https://github.com/speterlin/speterlin-stocks) and [speterlin-crypto](https://github.com/speterlin/speterlin-crypto) packages for automated quant-trading. Run the python script (in a python file) as shown below (in a quant-trading root directory) in a virtual environment (make sure it's running on Python 3.12+ to be able to run most up-to-date AI) on a spare computer running 24/7 or a hosted service like Heroku (scheduler for executing market checks, data downloads, algorithm runs) and AWS (for storing data) for automated trading.
 
