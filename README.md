@@ -138,18 +138,12 @@ crypto.portfolio_trading(portfolio=portfolio, exchange="kucoin", paper_trading=T
 ## Checking assets value in Python virtual environment shell (calling python and then entering Python virtual environment shell as opposed to running a script with python <<directory_path/file_name.py>>) after manually line-by-line importing necessary packages listed in appropriate script like Python script for Stocks programs/stocks/stocks_alpaca_<<your_username>>.py to properly set up that Python environment
 
 Stocks:
-```python
-account, alpaca_open_orders = stocks._fetch_data(stocks.alpaca_api.get_account, params={}, error_str=" - No account from Alpaca on: " + str(datetime.now()), empty_data = {}), stocks._fetch_data(stocks.alpaca_api.list_orders, params={'status': 'open', 'nested': True}, error_str=" - Alpaca open orders error on: " + str(datetime.now()), empty_data=[])
-assets = stocks.get_alpaca_assets(alpaca_account=account, alpaca_open_orders=alpaca_open_orders)
-print(str(assets) + "\nTotal Current Value: " + str(assets['current_value'].sum()) + "\nAccount Equity: " + str(account.equity) + "\nAccount Buying Power: " + str(account.buying_power))`
-```
-Crypto:
-```python
-assets = crypto.get_kucoin_assets()
-print(str(assets) + "\nTotal Current Value: " + str(assets['current_value'].sum()) + "\nTotal Current Value (BTC): " + str(assets['current_value(btc)'].sum()))`
-```
+See [speterlin-stocks#Check Assets](https://github.com/speterlin/speterlin-stocks/?tab=readme-ov-file#check-assets)
 
-## Backtesting in Python virtual environment shell (like stated above)
+Crypto:
+See [speterlin-crypto#Check Assets](https://github.com/speterlin/speterlin-crypto/?tab=readme-ov-file#check-assets)
+
+## Backtesting in Python virtual environment shell
 
 Both stocks and crypto backtesting don't take into effect a -0.3 Stop-Loss on the entire portfolio (this would add compute time and might subtract from the scientific nature of figuring out which portfolio algorithm and parameter combination performs best in the time period).
 
