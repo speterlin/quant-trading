@@ -111,6 +111,8 @@ stocks.portfolio_trading(portfolio=portfolio, paper_trading=True, paper_trading_
 
 ## Python script for Crypto (programs/crypto/crypto_kucoin_<<your_username>>)
 
+Notice that no portfolio_account is declared since I haven't implemented many algorithms in crypto space
+
 ```python
 import speterlin_crypto.module1 as crypto # always run from quant-trading root directory (Developer/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory
 
@@ -161,20 +163,14 @@ sl_tsl_a_ps = [[-0.15,0.05,-0.0125],[-0.2,0.2,-0.05],[-0.3,0.5,-0.2]] # [-1,10,-
 usd_invests = [1000,2000] # 500
 balances_usd = [10000]
 
-tickers_with_stock_splits = stocks.tickers_with_stock_splits_in_period_fmp(start_day=start_day)
-# since FMP makes duplicates for some reason
-skip_idxs = []
-for idx in tickers_with_stock_splits.index:
-    if idx not in skip_idxs:
-        symbol, date = tickers_with_stock_splits.loc[idx, ['symbol', 'date']]
-        matching_rows = tickers_with_stock_splits[(tickers_with_stock_splits['symbol'] == symbol) & (tickers_with_stock_splits['date'] == date)]
-        if len(matching_rows) > 1:
-            print(symbol + ": " + str(date) + str(matching_rows))
-            repeated_idx = matching_rows.index[-1]
-            tickers_with_stock_splits = tickers_with_stock_splits.drop(repeated_idx)
-            skip_idxs.append(repeated_idx)
+start_day = datetime.strptime('2025_10_13 13:00:00', '%Y_%m_%d %H:%M:%S')
+end_day = datetime.strptime('2025_12_17 13:00:00', '%Y_%m_%d %H:%M:%S')
 
-# make sure to change 'type', portfolios_type, 'start_day' of portfolio['constants'], check tickers_with_stock_splits before running
+tickers_with_stock_splits = stocks.get_tickers_with_stock_splits_fmp(start_day=start_day)
+df_tickers_2025_12_17 = stocks.get_saved_tickers_data(date=end_day.strftime('%Y-%m-%d'))
+tickers_to_avoid = stocks.get_tickers_to_avoid(df_tickers_2025_12_17, end_day)
+
+# check tickers_with_stock_splits & tickers_to_avoid before running
 for up_down_move in up_down_moves:
     for days in bt_days:
         for sl_tsl_a_p in sl_tsl_a_ps: # for sl in sls:
@@ -183,17 +179,22 @@ for up_down_move in up_down_moves:
                 for balance_usd in balances_usd:
                     # maybe add column for 'rank_rise' (within S&P 500), 'rank/price/volume_trend' or 'buy_date_fmp_24h_vol', for column dtypes: both didn't work - dtype=[np.datetime64, np.float64, np.datetime64, np.float64]) # dtype=np.dtype([('datetime64','float64','datetime64','float6
                     portfolio = {
-                        'constants': {'type': type, 'up_down_move': up_down_move, 'days': days, 'sl': sl, 'tsl_a': tsl_a, 'tsl_p': tsl_p, 'usd_invest': usd_invest, 'usd_invest_min': 100, 'buy_date_gtrends_15d': False, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_fmp_24h_vol': False, 'start_balance': {'usd': balance_usd}, 'start_day': '2024-12-01'}, # assuming always enforcing usd_invest_min
+                        'constants': {'type': type, 'up_down_move': up_down_move, 'days': days, 'sl': sl, 'tsl_a': tsl_a, 'tsl_p': tsl_p, 'usd_invest': usd_invest, 'usd_invest_min': 100, 'buy_date_gtrends_15d': False, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_fmp_24h_vol': False, 'start_balance': \
+                        {'usd': balance_usd}, 'start_day': start_day.strftime('%Y-%m-%d')}, # assuming always enforcing usd_invest_min
                         'balance': {'usd': balance_usd},
                         'max_value': {'usd': float("NaN")},
-                        'open': pd.DataFrame(columns=['position', 'buy_date', 'buy_price', 'balance', 'current_date', 'current_price', 'current_roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'current_date': 'datetime64[ns]', 'current_price': 'float64', 'current_roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}),
-                        'sold': pd.DataFrame(columns=['ticker', 'position', 'buy_date', 'buy_price', 'balance', 'sell_date', 'sell_price', 'roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'ticker': 'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'})
+                        'open': pd.DataFrame(columns=['position', 'buy_date', 'buy_price', 'balance', 'current_date', 'current_price', 'current_roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'position': 'object', 'buy_date': \
+                        'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'current_date': 'datetime64[ns]', 'current_price': 'float64', 'current_roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}),
+                        'sold': pd.DataFrame(columns=['ticker', 'position', 'buy_date', 'buy_price', 'balance', 'sell_date', 'sell_price', 'roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'ticker': 'object',\
+                         'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', \
+                         'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'})
                     }
-                    portfolio_name = str(up_down_move) + ("_" + str(-up_down_move) if portfolio['constants']['type'] not in ['tilupccu', 'airs', 'tngaia',  'senate_trading'] else "") + "_" + str(days) + "_" + str(sl_tsl_a_p) + "_" + str(usd_invest) + "_" + str(balance_usd) # + "_sl_"  + "_tsl_a_"  + "_p_"  + "_usd_invest_"
+                    portfolio_name = str(up_down_move) + ("_" + str(-up_down_move) if portfolio['constants']['type'] not in ['tilupccu', 'airs', 'tngaia',  'senate_trading'] else "") + "_" + str(days) + "_" + str(sl_tsl_a_p) +\
+                    "_" + str(usd_invest) + "_" + str(balance_usd) # + "_sl_"  + "_tsl_a_"  + "_p_"  + "_usd_invest_"
                     print(portfolio_name)
                     if portfolio_name in portfolios:
                         continue
-                    portfolios[portfolio_name] = stocks.run_portfolio(portfolio=portfolio, start_day=datetime.strptime('2024_12_01 13:00:00', '%Y_%m_%d %H:%M:%S'), end_day=datetime.strptime('2025_02_28 13:00:00', '%Y_%m_%d %H:%M:%S'), paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 120, 'days': 60}, tickers_with_stock_splits=tickers_with_stock_splits) # senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows)
+                    portfolios[portfolio_name] = stocks.run_portfolio(portfolio=portfolio, start_day=start_day, end_day=end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 120, 'days': 60}, tickers_with_stock_splits=tickers_with_stock_splits, tickers_to_avoid=tickers_to_avoid) # senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows)
 
 # List ROIs:
 for portfolio_name, portfolio in portfolios.items():
@@ -207,7 +208,10 @@ for portfolio_name, portfolio in portfolios.items():
 portfolios['50_-50_15_[-0.2, 0.2, -0.05]_2000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
 portfolios['50_-50_15_[-0.2, 0.2, -0.05]_2000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
 
-# if want to update a saved portfolios dict to current dates and not iterate over past values (make sure to check dates):
+# if want to update a saved portfolios dict to current dates and not iterate over past values (make sure to check dates, good idea to iterate over past few days - ie end_day - (DAYS+3)):
+new_start_day=datetime.strptime('2025_11_17 13:00:00', '%Y_%m_%d %H:%M:%S')
+new_end_day=datetime.strptime('2025_12_19 13:00:00', '%Y_%m_%d %H:%M:%S')
+
 import copy
 portfolios_updated = {}
 for portfolio_name, portfolio in portfolios.items():
@@ -215,11 +219,12 @@ for portfolio_name, portfolio in portfolios.items():
     new_portfolio = copy.deepcopy(portfolio)
     if portfolio_name in portfolios_updated:
         continue
-    portfolios_updated[portfolio_name] = stocks.run_portfolio(portfolio=new_portfolio, start_day=datetime.strptime('2025_01_18 13:00:00', '%Y_%m_%d %H:%M:%S'), end_day=datetime.strptime('2025_03_06 13:00:00', '%Y_%m_%d %H:%M:%S'), paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 420, 'days': 20}, tickers_with_stock_splits=tickers_with_stock_splits) # ,
+    portfolios_updated[portfolio_name] = stocks.run_portfolio(portfolio=new_portfolio, start_day=new_start_day, end_day=new_end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 420, 'days': 20}, tickers_with_stock_splits=tickers_with_stock_splits, tickers_to_avoid=tickers_to_avoid) # ,
 
-# Saving portfolios dict to data (make sure that dates reflect start and end date):
+# Saving portfolios dict to data (make sure that dates reflect start and end date of that portfolio):
 f = open('data/stocks/saved_portfolio_backups/back_testing/' + 'portfolios_' + type + '_' + ','.join(map(str,up_down_moves)) + '_' + ','.join(map(str,bt_days)) + \
- '_' + ','.join(map(str,sl_tsl_a_ps)) + '_' +  ','.join(map(str,usd_invests)) + '_' + ','.join(map(str,balances_usd)) + '_2024-12-01_to_2025-02-28' + '.pckl', 'wb') # 'rb'
+ '_' + ','.join(map(str,sl_tsl_a_ps)) + '_' +  ','.join(map(str,usd_invests)) + '_' + ','.join(map(str,balances_usd)) + '_' + start_day.strftime('%Y_%m_%d') + '_to_' + end_day.strftime('%Y_%m_%d')\
+ + '.pckl', 'wb') # 'rb'
 pd.to_pickle(portfolios, f) # portfolios = pd.read_pickle(f)
 f.close()
 ```
@@ -229,6 +234,7 @@ Crypto:
 import pandas as pd
 
 portfolios = {} # long only
+type = 'rr'
 up_down_moves = [50,100] # 10,20,40,
 bt_days = [5,10,15,20] #  ,
 sl_tsl_a_ps = [[-0.15,0.05,-0.0125],[-0.2,0.2,-0.05],[-0.3,0.5,-0.2]] # [-1,10,-5] # ,
@@ -237,7 +243,9 @@ balances_usdt = [5000] # balances_btc = [1]
 coins_to_analyzes = [1000] # 250,
 rank_rise_d_buy_limits = [1000] # 200,
 
-# make sure to change start_day of portfolio['constants'] before running
+start_day = datetime.strptime('2025_10_13 13:00:00', '%Y_%m_%d %H:%M:%S')
+end_day = datetime.strptime('2025_12_17 13:00:00', '%Y_%m_%d %H:%M:%S')
+
 for up_down_move in up_down_moves:
     for days in bt_days:
         for sl_tsl_a_p in sl_tsl_a_ps:
@@ -246,18 +254,24 @@ for up_down_move in up_down_moves:
                 for balance_usdt in balances_usdt:
                     for coins_to_analyze in coins_to_analyzes:
                         for rank_rise_d_buy_limit in rank_rise_d_buy_limits:
-                            portfolio_name = str(up_down_move) + "_" + str(-up_down_move) + "_" + str(days) + "_" + str(sl_tsl_a_p) + "_" + str(usdt_invest) + "_" + str(balance_usdt) + "_" + str(coins_to_analyze) + "_" + str(rank_rise_d_buy_limit) # balance_btc not at end since makes sense if it's next to btc_invest and also name is chronological (names are in order in which features were added)
+                            portfolio_name = str(up_down_move) + "_" + str(-up_down_move) + "_" + str(days) + "_" + str(sl_tsl_a_p) + "_" + str(usdt_invest) + "_" + str(balance_usdt) + "_" + str(coins_to_analyze) + "_" +\
+                            str(rank_rise_d_buy_limit) # balance_usdt not at end since makes sense if it's next to usdt_invest and also name is chronological (names are in order in which features were added)
                             print(portfolio_name)
                             if portfolio_name in portfolios:
                                 continue
                             portfolio = {
-                                'constants': {'base_pair': 'usdt', 'type': 'rr', 'up_down_move': up_down_move, 'days': days, 'sl': sl, 'tsl_a': tsl_a, 'tsl_p': tsl_p, 'usdt_invest': usdt_invest, 'usdt_invest_min': 100, 'coins_to_analyze': coins_to_analyze, 'rank_rise_d_buy_limit': rank_rise_d_buy_limit, 'buy_date_gtrends_15d': False, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_kucoin_usdt_24h_vol': False, 'start_balance': {'usdt': balance_usdt}, 'start_day': '2024-05-01'},
+                                'constants': {'base_pair': 'usdt', 'type': type, 'up_down_move': up_down_move, 'days': days, 'sl': sl, 'tsl_a': tsl_a, 'tsl_p': tsl_p, 'usdt_invest': usdt_invest, 'usdt_invest_min': 100, 'coins_to_analyze': coins_to_analyze,\
+                                'rank_rise_d_buy_limit': rank_rise_d_buy_limit, 'buy_date_gtrends_15d': False, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_kucoin_usdt_24h_vol': False, 'start_balance': {'usdt': balance_usdt}, 'start_day': start_day.strftime('%Y-%m-%d')},
                                 'balance': {'usdt': balance_usdt},
                                 'max_value': {'usdt': float("NaN")},
-                                'open': pd.DataFrame(columns=['symbol', 'position', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'current_date', 'current_price(btc)', 'current_roi(btc)', 'kucoin_usdt_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).astype({'symbol': 'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'buy_price(btc)': 'float64', 'balance': 'float64', 'current_date': 'datetime64[ns]', 'current_price(btc)': 'float64', 'current_roi(btc)': 'float64', 'kucoin_usdt_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price(btc)': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}), # 'binance_btc_24h_vol(btc)'
-                                'sold': pd.DataFrame(columns=['coin', 'symbol', 'position', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'sell_date', 'sell_price', 'sell_price(btc)', 'roi(btc)', 'kucoin_usdt_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).astype({'coin': 'object', 'symbol': 'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'buy_price(btc)': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'sell_price(btc)': 'float64', 'roi(btc)': 'float64', 'kucoin_usdt_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price(btc)': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}) # 'binance_btc_24h_vol(btc)'
+                                'open': pd.DataFrame(columns=['symbol', 'position', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'current_date', 'current_price(btc)', 'current_roi(btc)', 'kucoin_usdt_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).astype({'symbol':\
+                                'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'buy_price(btc)': 'float64', 'balance': 'float64', 'current_date': 'datetime64[ns]', 'current_price(btc)': 'float64', 'current_roi(btc)': 'float64', 'kucoin_usdt_24h_vol': 'float64', 'gtrends_15d':\
+                                'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price(btc)': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}), # 'binance_btc_24h_vol(btc)'
+                                'sold': pd.DataFrame(columns=['coin', 'symbol', 'position', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'sell_date', 'sell_price', 'sell_price(btc)', 'roi(btc)', 'kucoin_usdt_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price(btc)', 'trade_notes', 'other_notes']).astype(\
+                                {'coin': 'object', 'symbol': 'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'buy_price(btc)': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'sell_price(btc)': 'float64',\
+                                'roi(btc)': 'float64', 'kucoin_usdt_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price(btc)': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}) # 'binance_btc_24h_vol(btc)'
                             }
-                            portfolios[portfolio_name] = crypto.run_portfolio_rr(portfolio=portfolio, start_day=datetime.strptime('2024_06_15 17:00:00', '%Y_%m_%d %H:%M:%S'), end_day=datetime.strptime('2024_08_06 17:00:00', '%Y_%m_%d %H:%M:%S'), rr_sell=True, paper_trading=True, back_testing=True)
+                            portfolios[portfolio_name] = crypto.run_portfolio_rr(portfolio=portfolio, start_day=start_day, end_day=end_day, rr_sell=True, paper_trading=True, back_testing=True)
 
 # List ROIs:
 kucoin_pairs_with_price_and_vol_current = crypto._fetch_data(crypto.get_kucoin_pairs, params={}, error_str=" - Kucoin get tickers error on: " + str(datetime.now()), empty_data={})
@@ -275,7 +289,10 @@ for portfolio_name, portfolio in portfolios.items():
 portfolios['10_-10_20_[-0.3, 0.5, -0.2]_1000_10000_1000_1000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['symbol', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_price(btc)', 'current_roi', 'current_roi(btc)']]
 portfolios['10_-10_20_[-0.3, 0.5, -0.2]_1000_10000_1000_1000']['sold'].sort_values('roi(btc)', inplace=False, ascending=False)[['symbol', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'sell_price(btc)', 'roi(btc)']]
 
-# if want to update a saved portfolios dict to current dates and not iterate over past values (make sure to check dates):
+# if want to update a saved portfolios dict to current dates and not iterate over past values (make sure to check dates, good idea to iterate over past few days - ie end_day - (DAYS+3)):
+new_start_day=datetime.strptime('2025_11_29 17:00:00', '%Y_%m_%d %H:%M:%S')
+new_end_day=datetime.strptime('2025_12_20 17:00:00', '%Y_%m_%d %H:%M:%S')
+
 import copy
 portfolios_updated = {}
 for portfolio_name, portfolio in portfolios.items():
@@ -284,12 +301,12 @@ for portfolio_name, portfolio in portfolios.items():
     if portfolio_name in portfolios_updated:
         continue
     # make sure start_day is the last day the previous portfolios were run - max(bt_days)
-    portfolios_updated[portfolio_name] = crypto.run_portfolio_rr(portfolio=new_portfolio, start_day=datetime.strptime('2024_07_29 17:00:00', '%Y_%m_%d %H:%M:%S'), end_day=datetime.strptime('2024_08_20 17:00:00', '%Y_%m_%d %H:%M:%S'), rr_sell=True, paper_trading=True, back_testing=True)
+    portfolios_updated[portfolio_name] = crypto.run_portfolio_rr(portfolio=new_portfolio, start_day=new_start_day, end_day=new_end_day, rr_sell=True, paper_trading=True, back_testing=True)
 
-# Saving portfolios dict to data (make sure that dates reflect start and end date):
+# Saving portfolios dict to data (make sure that dates reflect start and end date of that portfolio):
 f = open('data/crypto/saved_portfolio_backups/back_testing/' + 'portfolios_rr_kucoin_' + ','.join(map(str,up_down_moves)) + '_' + ','.join(map(str,bt_days)) + \
 '_' + ','.join(map(str,sl_tsl_a_ps)) + '_' +  ','.join(map(str,usdt_invests)) + '_' + ','.join(map(str,balances_usdt)) + '_' + \
-','.join(map(str,coins_to_analyzes)) + '_' + ','.join(map(str,rank_rise_d_buy_limits)) +  '_2024-05-01_to_2024-06-27' + '.pckl', 'wb') #   'rb' #
+','.join(map(str,coins_to_analyzes)) + '_' + ','.join(map(str,rank_rise_d_buy_limits)) +  '_' + start_day.strftime('%Y_%m_%d') + '_to_' + end_day.strftime('%Y_%m_%d') + '.pckl', 'wb') #   'rb' #
 pd.to_pickle(portfolios, f) # portfolios = pd.read_pickle(f) # _updated
 f.close()
 ```
@@ -297,22 +314,49 @@ f.close()
 ## Checking Stocks Senate trade data
 
 ```python
-df_tickers_sp500 = stocks._fetch_data(stocks.get_sp500_ranked_tickers_by_marketbeat, params={}, error_str=" - No s&p 500 tickers data from Market Beat on: " + str(datetime.now()), empty_data = pd.DataFrame())
+df_tickers_sp500 = stocks._fetch_data(stocks.get_sp500_ranked_tickers_by_slickcharts, params={}, error_str=" - No S&P 500 tickers data from Slickcharts on: " + str(datetime.now()), empty_data = pd.DataFrame())
 senate_timestamps_and_tickers_inflows_and_outflows = stocks._fetch_data(stocks.get_senate_timestamps_and_tickers_inflows_and_outflows_by_month_for_stocks, params={'stocks_list': list(df_tickers_sp500.index)}, error_str=" - Issues with senate timestamps and tickers inflows and outflows by month data from FMP on: " + str(datetime.now()), empty_data = pd.DataFrame())
 ```
 
 ## Backtest over a single portfolio
 
 ```python
+start_day = datetime.strptime('2022_01_24 13:00:00', '%Y_%m_%d %H:%M:%S')
+end_day = datetime.strptime('2024_01_24 13:00:00', '%Y_%m_%d %H:%M:%S')
+
+# senate_trading algorithm
 portfolio_senate_trading_test = {
-    'constants': {'type': 'senate_trading', 'up_down_move': 5, 'days': 30, 'sl': -0.2, 'tsl_a': 0.2, 'tsl_p': -0.05, 'usd_invest': 1000, 'usd_invest_min': 100, 'buy_date_gtrends_15d': False, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_fmp_24h_vol': False, 'start_balance': {'usd': 10000}, 'start_day': '2022-01-24'},
+    'constants': {'type': 'senate_trading', 'up_down_move': 5, 'days': 30, 'sl': -0.2, 'tsl_a': 0.2, 'tsl_p': -0.05, 'usd_invest': 1000, 'usd_invest_min': 100, 'buy_date_gtrends_15d': False, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_fmp_24h_vol': False,\
+    'start_balance': {'usd': 10000}, 'start_day': start_day.strftime('%Y-%m-%d')},
     'balance': {'usd': 10000},
     'max_value': {'usd': float("NaN")},
-    'open': pd.DataFrame(columns=['position', 'buy_date', 'buy_price', 'balance', 'current_date', 'current_price', 'current_roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'current_date': 'datetime64[ns]', 'current_price': 'float64', 'current_roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}),
-    'sold': pd.DataFrame(columns=['ticker', 'position', 'buy_date', 'buy_price', 'balance', 'sell_date', 'sell_price', 'roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'ticker': 'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'})
+    'open': pd.DataFrame(columns=['position', 'buy_date', 'buy_price', 'balance', 'current_date', 'current_price', 'current_roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'position': 'object', 'buy_date':\
+    'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'current_date': 'datetime64[ns]', 'current_price': 'float64', 'current_roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price':\
+    'float64', 'trade_notes': 'object', 'other_notes': 'object'}),
+    'sold': pd.DataFrame(columns=['ticker', 'position', 'buy_date', 'buy_price', 'balance', 'sell_date', 'sell_price', 'roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'ticker': 'object', 'position':\
+    'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price': 'float64', 'trade_notes': 'object', 'other_notes': 'object'})
 }
 
-portfolio_senate_trading_test = stocks.run_portfolio(portfolio=portfolio_senate_trading_test, start_day=datetime.strptime('2022_01_24 13:00:00', '%Y_%m_%d %H:%M:%S'), end_day=datetime.strptime('2024_01_24 13:00:00', '%Y_%m_%d %H:%M:%S'), paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': False, 'time': 420, 'days': 20}, senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows, tickers_with_stock_splits=tickers_with_stock_splits)
+portfolio_senate_trading_test = stocks.run_portfolio(portfolio=portfolio_senate_trading_test, start_day=start_day, end_day=end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': False, 'time': 420, 'days': 20}, senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows)
+
+# airs algorithm
+# Make sure sector in 'up_down_move' is one of the listed sectors
+sectors = list(df_tickers_interval_stop.Sector.unique())
+
+portfolio_airs_test = { # 'tr', 'zr' and remove up_down_move, 'tr' have to start on '2020-05-08', first day with tradingview ratings # 'up_down_move': 100, 'days': 15, 'sl': -0.15, 'tsl_a': 0.05, 'tsl_p': -0.0125, 'usd_invest': 1000,
+    'constants': {'type': 'airs', 'up_down_move': [8,4,'Financial Services'], 'days': 0, 'sl': -0.3, 'tsl_a': 0.5, 'tsl_p': -0.2, 'usd_invest': 1000, 'usd_invest_min': 100, 'buy_date_gtrends_15d': True, 'end_day_open_positions_gtrends_15d': False,\
+    'end_day_open_positions_fmp_24h_vol': False, 'start_balance': {'usd': 10000}, 'start_day': start_day.strftime('%Y-%m-%d')}, # assuming always enforcing usd_invest_min # maybe refactor 'buy_date_gtrends_15d' to something more logical in True / False like 'collect_buy_date_gtrends_15d'
+    'balance': {'usd': 10000}, # alpaca only offers margin trading so if deposit $10k actually worth $20k (meaning if it shows $10k it's actually $5k deposited)
+    'max_value': {'usd': float("NaN")}, # *2 since margin trading with Alpaca
+    'open': pd.DataFrame(columns=['position', 'buy_date', 'buy_price', 'balance', 'current_date', 'current_price', 'current_roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_armed', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'position': 'object', 'buy_date':\
+    'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'current_date': 'datetime64[ns]', 'current_price': 'float64', 'current_roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_armed': 'bool', 'tsl_max_price': 'float64', 'trade_notes':\
+    'object', 'other_notes': 'object'}),
+    'sold': pd.DataFrame(columns=['ticker', 'position', 'buy_date', 'buy_price', 'balance', 'sell_date', 'sell_price', 'roi', 'fmp_24h_vol', 'gtrends_15d', 'rank_rise_d', 'tsl_max_price', 'trade_notes', 'other_notes']).astype({'ticker': 'object', 'position':\
+    'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'roi': 'float64', 'fmp_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price':\
+    'float64', 'trade_notes': 'object', 'other_notes': 'object'})
+}
+
+portfolio_airs_test = stocks.run_portfolio(portfolio=portfolio_airs_test, start_day=start_day, end_day=end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 120, 'days': 20})
 ```
 
 ## Other Information
