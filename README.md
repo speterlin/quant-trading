@@ -341,7 +341,7 @@ portfolio_senate_trading_test = stocks.run_portfolio(portfolio=portfolio_senate_
 
 # airs algorithm
 # Make sure sector in 'up_down_move' is one of the listed sectors
-sectors = list(df_tickers_interval_stop.Sector.unique())
+sectors = list(df_tickers_2025_12_17.Sector.unique())
 
 portfolio_airs_test = { # 'tr', 'zr' and remove up_down_move, 'tr' have to start on '2020-05-08', first day with tradingview ratings # 'up_down_move': 100, 'days': 15, 'sl': -0.15, 'tsl_a': 0.05, 'tsl_p': -0.0125, 'usd_invest': 1000,
     'constants': {'type': 'airs', 'up_down_move': [8,4,'Financial Services'], 'days': 0, 'sl': -0.3, 'tsl_a': 0.5, 'tsl_p': -0.2, 'usd_invest': 1000, 'usd_invest_min': 100, 'buy_date_gtrends_15d': True, 'end_day_open_positions_gtrends_15d': False,\
