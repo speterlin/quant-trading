@@ -35,10 +35,19 @@ Your virtual environment should have installed and up-to-date packages necessary
 You should have multiple accounts with the brokerage you trade with so you can run multiple real trading (paper_trading=False) scripts, in this case account 1: `<<your_username>>` and account 2: `<<your_other_username>>`, both with Alpaca. You can paper_trade multiple scripts off one account if you set `stocks.portfolio_trading(portfolio=portfolio, paper_trading_on_used_account=True, ...)` which doesn't paper_trade on Alpaca / Kucoin itself just in your virtual environment. Twilio is only necessary if you want text notifications to your phone (you'll need to set up `personal.twilio_phone_to` and `personal.twilio_phone_from` numbers with Twilio).
 
 ```python
-import speterlin_stocks.module1 as stocks # always run from quant-trading root directory (Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory
+# always run from quant-trading root directory (/Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# sometimes issue with personal (importing correct keys, secrets, etc)
 
+# Standard library imports
 import os
+
+# Third Party imports
+import speterlin_stocks.module1 as stocks
 import alpaca_trade_api as tradeapi
+from twilio.rest import Client as TwilioClient
+from datetime import datetime # , timedelta # only import timedelta when need to inspect portfolio or data or run stocks.run_portfolio() manually
+
+# Local Imports
 import personal
 
 os.environ["APCA_API_BASE_URL"] = personal.alpaca_base_url_<<your_username>>
@@ -46,12 +55,8 @@ stocks.alpaca_api = tradeapi.REST(personal.alpaca_key_<<your_username>>, persona
 
 stocks.FMP_API_KEY = personal.fmp_api_key
 
-from twilio.rest import Client as TwilioClient
-
 stocks.twilio_client = TwilioClient(personal.twilio_account_sid, personal.twilio_auth_token)
 stocks.twilio_phone_to, stocks.twilio_phone_from = personal.twilio_phone_to, personal.twilio_phone_from
-
-from datetime import datetime # , timedelta # only import timedelta when need to inspect portfolio or data or run stocks.run_portfolio() manually
 
 # check that portfolio belongs to the correct account (<<your_other_username>> vs. <<your_username>>)
 stocks.portfolio_account = "alpaca_<<your_username>>"
@@ -68,10 +73,22 @@ stocks.portfolio_trading(portfolio=portfolio, paper_trading=False, portfolio_cur
 tngaia is an acronym for what kind of algorithm the trading script incorporates, in this case Top-N Gainers AI Analysis (where n is a number set in parameters reflecting top-n gainers from the day to be analyzed by AI - OpenAI or Gemini Pro, both options are available in stocks package - for buy / sell opportunities executed at start of next trading day). Due to simplicity and pricing Gemini Pro is being used currently.
 
 ```python
-import speterlin_stocks.module1 as stocks # always run from quant-trading root directory (Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory
+# always run from quant-trading root directory (/Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# sometimes issue with personal (importing correct keys, secrets, etc)
 
+# Standard library imports
 import os
+
+# Third Party imports
+import speterlin_stocks.module1 as stocks
 import alpaca_trade_api as tradeapi
+from twilio.rest import Client as TwilioClient
+from datetime import datetime # , timedelta # only import timedelta when need to inspect portfolio or data or run stocks.run_portfolio() manually
+# from openai import OpenAI
+# from langchain_openai import ChatOpenAI # old implementation of langchain: # from langchain.chat_models import ChatOpenAI
+import google.generativeai as genai
+
+# Local Imports
 import personal
 
 os.environ["APCA_API_BASE_URL"] = personal.alpaca_base_url_<<your_other_username>>
@@ -79,30 +96,21 @@ stocks.alpaca_api = tradeapi.REST(personal.alpaca_key_<<your_other_username>>, p
 
 stocks.FMP_API_KEY = personal.fmp_api_key
 
-# from openai import OpenAI
-# from langchain_openai import ChatOpenAI # old implementation of langchain: # from langchain.chat_models import ChatOpenAI
-
 # stocks.openai_client = OpenAI(organization=personal.openai_organization, api_key=personal.openai_secret_api_key)
 # stocks.chat_model = ChatOpenAI(temperature=0, openai_api_key=personal.openai_secret_api_key)
 
 GOOGLE_API_KEY = personal.google_gemini_pro_api_key
 
-import google.generativeai as genai
-
 genai.configure(api_key=GOOGLE_API_KEY)
 stocks.google_gemini_pro_model = genai.GenerativeModel('gemini-pro')
-
-from twilio.rest import Client as TwilioClient
 
 stocks.twilio_client = TwilioClient(personal.twilio_account_sid, personal.twilio_auth_token)
 stocks.twilio_phone_to, stocks.twilio_phone_from = personal.twilio_phone_to, personal.twilio_phone_from
 
-from datetime import datetime # , timedelta # only import timedelta when need to inspect portfolio or data or run stocks.run_portfolio() manually
-
 # check that portfolio belongs to the correct account (<<your_other_username>> vs. <<your_username>>)
 stocks.portfolio_account = "alpaca_<<your_other_username>>"
 
-# make sure to change 'start_day' of portfolio['constants'] before running
+# make sure dates are correct before running
 portfolio = stocks.get_saved_portfolio_backup("portfolio_tngaia_[8, 4]_1_-0.3_0.5_-0.2_1000_100_True_False_False_{'usd': 10000}_2024-03-18_to_" + datetime.now().strftime('%Y-%m-%d'))
 
 # BE CAREFUL, update to current paper_trading, portfolio_usd_value_negative_change_from_max_limit, portfolio_current_roi_restart, have to ensure that another portfolio_trading instance is saving data (download_and_save_tickers_data)
@@ -114,21 +122,26 @@ stocks.portfolio_trading(portfolio=portfolio, paper_trading=True, paper_trading_
 Notice that no portfolio_account is declared since I haven't implemented many algorithms in crypto space
 
 ```python
-import speterlin_crypto.module1 as crypto # always run from quant-trading root directory (Developer/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory
+# always run from quant-trading root directory (/Developer/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# sometimes issue with personal (importing correct keys, secrets, etc)
 
-import personal
+# Standard library imports
+
+# Third Party imports
+import speterlin_crypto.module1 as crypto
 # from binance.client import Client as BinanceClient # github: binance-exchange/python-binance # here and below: binance.exceptions.BinanceAPIException: APIError(code=0): Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received this message in error.
 from kucoin.client import Client as KucoinClient
+from twilio.rest import Client as TwilioClient
+from datetime import datetime # , timedelta # only import timedelta when need to inspect portfolio or data or run crypto.run_portfolio_rr() manually
+
+# Local Imports
+import personal
 
 # crypto.binance_client = BinanceClient(personal.binance_key_<<your_username>>, personal.binance_secret_<<your_username>>)
 crypto.kucoin_client = KucoinClient(personal.kucoin_key_<<your_username>>, personal.kucoin_secret_<<your_username>>, personal.kucoin_api_passphrase_<<your_username>>)
 
-from twilio.rest import Client as TwilioClient
-
 crypto.twilio_client = TwilioClient(personal.twilio_account_sid, personal.twilio_auth_token)
 crypto.twilio_phone_to, crypto.twilio_phone_from = personal.twilio_phone_to, personal.twilio_phone_from
-
-from datetime import datetime # , timedelta # only import timedelta when need to inspect portfolio or data or run crypto.run_portfolio() manually
 
 # make sure to change start_day of portfolio['constants'] before running
 portfolio = crypto.get_saved_portfolio_backup("portfolio_usdt_rr_10_-10_20_-0.3_0.5_-0.2_1000_100_1000_1000_True_False_False_{'usdt': 10000}_2023-03-12_to_" + datetime.now().strftime('%Y-%m-%d'))
@@ -153,22 +166,26 @@ Algorithms are listed in downloaded package directory `stocks_speterlin/module1.
 
 Stocks:
 ```python
+# Standard library imports
+import copy
+
+# Third Party imports
 import pandas as pd
 
 portfolios = {} #  # rr,,tr # long only # maybe refactor pccepsf to industry check  like ic
 type = 'rr' # 'tilupccu'
 up_down_moves = [10,20,50,100] # [5] # [1,0],[1,-1] #  
-bt_days = [15,20] # , # , 1,2,5,10 # , # 90,120,150,180,210,240,270,300,330,365
+bt_days = [5,10] # , # , 1,2,,15,20 # , # 90,120,150,180,210,240,270,300,330,365
 sl_tsl_a_ps = [[-0.15,0.05,-0.0125],[-0.2,0.2,-0.05],[-0.3,0.5,-0.2]] # [-1,10,-5] #  all performed worse than [-0.15, 0.05, -0.0125]: [-0.15, 0.05, -0.02], [-0.15, 0.07, -0.0175], [-0.15, 0.10, -0.025], [-0.10, 0.05, -0.0125]
 usd_invests = [1000,2000] # 500
 balances_usd = [10000]
 
 start_day = datetime.strptime('2025_10_13 13:00:00', '%Y_%m_%d %H:%M:%S')
-end_day = datetime.strptime('2025_12_17 13:00:00', '%Y_%m_%d %H:%M:%S')
+end_day = datetime.strptime('2025_12_19 13:00:00', '%Y_%m_%d %H:%M:%S')
 
 tickers_with_stock_splits = stocks.get_tickers_with_stock_splits_fmp(start_day=start_day)
-df_tickers_2025_12_17 = stocks.get_saved_tickers_data(date=end_day.strftime('%Y-%m-%d'))
-tickers_to_avoid = stocks.get_tickers_to_avoid(df_tickers_2025_12_17, end_day)
+df_tickers_2025_12_19 = stocks.get_saved_tickers_data(date=end_day.strftime('%Y-%m-%d'))
+tickers_to_avoid = stocks.get_tickers_to_avoid(df_tickers_2025_12_19, end_day)
 
 # check tickers_with_stock_splits & tickers_to_avoid before running
 for up_down_move in up_down_moves:
@@ -205,14 +222,13 @@ for portfolio_name, portfolio in portfolios.items():
     print(portfolio_name + ", USD Value: " + str(portfolio_usd_value) + ", USD Value Growth: " + str(portfolio_usd_value_growth))
 
 # Check outlier individual portfolios ('50_-50_15_[-0.2, 0.2, -0.05]_2000_10000' is an example portfolio)
-portfolios['50_-50_15_[-0.2, 0.2, -0.05]_2000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
-portfolios['50_-50_15_[-0.2, 0.2, -0.05]_2000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
+portfolios['50_-50_20_[-0.2, 0.2, -0.05]_2000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
+portfolios['50_-50_20_[-0.2, 0.2, -0.05]_2000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
 
 # if want to update a saved portfolios dict to current dates and not iterate over past values (make sure to check dates, good idea to iterate over past few days - ie end_day - (DAYS+3)):
 new_start_day=datetime.strptime('2025_11_17 13:00:00', '%Y_%m_%d %H:%M:%S')
 new_end_day=datetime.strptime('2025_12_19 13:00:00', '%Y_%m_%d %H:%M:%S')
 
-import copy
 portfolios_updated = {}
 for portfolio_name, portfolio in portfolios.items():
     print(portfolio_name)
@@ -231,6 +247,10 @@ f.close()
 
 Crypto:
 ```python
+# Standard library imports
+import copy
+
+# Third Party imports
 import pandas as pd
 
 portfolios = {} # long only
@@ -244,7 +264,7 @@ coins_to_analyzes = [1000] # 250,
 rank_rise_d_buy_limits = [1000] # 200,
 
 start_day = datetime.strptime('2025_10_13 13:00:00', '%Y_%m_%d %H:%M:%S')
-end_day = datetime.strptime('2025_12_17 13:00:00', '%Y_%m_%d %H:%M:%S')
+end_day = datetime.strptime('2025_12_19 13:00:00', '%Y_%m_%d %H:%M:%S')
 
 for up_down_move in up_down_moves:
     for days in bt_days:
@@ -293,7 +313,6 @@ portfolios['10_-10_20_[-0.3, 0.5, -0.2]_1000_10000_1000_1000']['sold'].sort_valu
 new_start_day=datetime.strptime('2025_11_29 17:00:00', '%Y_%m_%d %H:%M:%S')
 new_end_day=datetime.strptime('2025_12_20 17:00:00', '%Y_%m_%d %H:%M:%S')
 
-import copy
 portfolios_updated = {}
 for portfolio_name, portfolio in portfolios.items():
     print(portfolio_name)
@@ -341,7 +360,7 @@ portfolio_senate_trading_test = stocks.run_portfolio(portfolio=portfolio_senate_
 
 # airs algorithm
 # Make sure sector in 'up_down_move' is one of the listed sectors
-sectors = list(df_tickers_2025_12_17.Sector.unique())
+sectors = list(df_tickers_2025_12_19.Sector.unique())
 
 portfolio_airs_test = { # 'tr', 'zr' and remove up_down_move, 'tr' have to start on '2020-05-08', first day with tradingview ratings # 'up_down_move': 100, 'days': 15, 'sl': -0.15, 'tsl_a': 0.05, 'tsl_p': -0.0125, 'usd_invest': 1000,
     'constants': {'type': 'airs', 'up_down_move': [8,4,'Financial Services'], 'days': 0, 'sl': -0.3, 'tsl_a': 0.5, 'tsl_p': -0.2, 'usd_invest': 1000, 'usd_invest_min': 100, 'buy_date_gtrends_15d': True, 'end_day_open_positions_gtrends_15d': False,\

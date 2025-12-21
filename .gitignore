@@ -1,8 +1,10 @@
 resources/
 commit_message.txt
 
-# Ignore accomplishments large files
+# Ignore accomplishments large files and non-ego enhancing information
 accomplishments/Matrix like requests response.mp4
+accomplishments/Screen Shot 2025-12-18 at 8.45.53 PM PyPiStats.org speterlin-stocks downloads 2025-11-21->2025-12-18.png
+accomplishments/Screen Shot 2025-12-20 at 7.57.04 PM PyPiStats.org speterlin-stocks downloads (2323) 2025-11-21->2025-12-20.png
 
 # Ignore costs
 costs/
@@ -24,7 +26,7 @@ personal.py
 # Ignore old&extra
 old&extra/
 
-# Ignore programs
+# Ignore programs since include email information
 programs/
 
 # Ignore programs analysis
