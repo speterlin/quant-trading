@@ -28,7 +28,7 @@ Crypto:
 
 ## Python virtual environment (quant-trading directory requirements.txt)
 
-Your virtual environment should have installed and up-to-date packages necessary for collecting and analyzing data and executing trades and AI analysis (for both stocks and crypto trading) listed in a `requirements.txt` (check my `requirements.txt` file as an example) in your quant-trading root directory. You can do easily do that after installing speterlin-stocks and speterlin-crypto with a `pip freeze > requirements.txt` call and then call `pip install --upgrade -r requirements.txt` every time you want to upgrade packages.
+Your virtual environment should have installed and up-to-date packages necessary for collecting and analyzing data and executing trades and AI analysis (for both stocks and crypto trading) listed in a `requirements.txt` (check my `requirements.txt` file as an example) in your quant-trading root directory. You can do easily do that after installing `speterlin-stocks` and `speterlin-crypto` with a `pip freeze > requirements.txt` call and then call `pip install --upgrade -r requirements.txt` every time you want to upgrade packages.
 
 ## Python script for Stocks (programs/stocks/stocks_alpaca_<<your_username>>.py)
 
@@ -45,7 +45,7 @@ import os
 import speterlin_stocks.module1 as stocks
 import alpaca_trade_api as tradeapi
 from twilio.rest import Client as TwilioClient
-from datetime import datetime # , timedelta # only import timedelta when need to inspect portfolio or data or run stocks.run_portfolio() manually
+from datetime import datetime, timedelta # importing for ease of use timedelta even though only needed for Python virtual environment shell inspection of portfolio or data or running stocks.run_portfolio() manually
 
 # Local Imports
 import personal
@@ -83,7 +83,7 @@ import os
 import speterlin_stocks.module1 as stocks
 import alpaca_trade_api as tradeapi
 from twilio.rest import Client as TwilioClient
-from datetime import datetime # , timedelta # only import timedelta when need to inspect portfolio or data or run stocks.run_portfolio() manually
+from datetime import datetime, timedelta # importing for ease of use timedelta even though only needed for Python virtual environment shell inspection of portfolio or data or running stocks.run_portfolio() manually
 # from openai import OpenAI
 # from langchain_openai import ChatOpenAI # old implementation of langchain: # from langchain.chat_models import ChatOpenAI
 import google.generativeai as genai
@@ -132,7 +132,7 @@ import speterlin_crypto.module1 as crypto
 # from binance.client import Client as BinanceClient # github: binance-exchange/python-binance # here and below: binance.exceptions.BinanceAPIException: APIError(code=0): Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received this message in error.
 from kucoin.client import Client as KucoinClient
 from twilio.rest import Client as TwilioClient
-from datetime import datetime # , timedelta # only import timedelta when need to inspect portfolio or data or run crypto.run_portfolio_rr() manually
+from datetime import datetime, timedelta # importing for ease of use timedelta even though only needed for Python virtual environment shell inspection of portfolio or data or running crypto.run_portfolio_rr() manually
 
 # Local Imports
 import personal
@@ -383,7 +383,7 @@ portfolio_airs_test = stocks.run_portfolio(portfolio=portfolio_airs_test, start_
 
 * Sometimes deleting old portfolios won't work, ie `data/stocks/saved_portfolio_backups/alpaca_<<your_username>>/portfolio_rr_50_-50_20_-0.2_0.2_-0.05_2000_100_True_False_False_{'usd'/ 10000}_2024-12-01_to_2025-11-14.pckl` won't be properly replaced with saved portfolio on 2025-11-17 and you'll have to manually delete old files such as this one
 
-* Data sites will change their html every so often (probably to avoid scrapers), which I am on top of (usually with a max margin of error of 1 week), make sure to stay up-to-date with most recent `speterlin-stocks` and `speterlin_crypto` versions
+* Data sites will change their html every so often (probably to avoid scrapers), which I am on top of (usually with a max margin of error of 1 week), make sure to stay up-to-date with most recent `speterlin-stocks` and `speterlin-crypto` versions
 
 * Services (personal remote / retail quant-trading, saved financial & social data since 2020, backtesting, algorithms, incorporating data & financial APIs)
 
