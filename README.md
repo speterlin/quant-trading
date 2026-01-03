@@ -35,8 +35,8 @@ Your virtual environment should have installed and up-to-date packages necessary
 You should have multiple accounts with the brokerage you trade with so you can run multiple real trading (paper_trading=False) scripts, in this case account 1: `<<your_username>>` and account 2: `<<your_other_username>>`, both with Alpaca. You can paper_trade multiple scripts off one account if you set `stocks.portfolio_trading(portfolio=portfolio, paper_trading_on_used_account=True, ...)` which doesn't paper_trade on Alpaca / Kucoin itself just in your virtual environment. Twilio is only necessary if you want text notifications to your phone (you'll need to set up `personal.twilio_phone_to` and `personal.twilio_phone_from` numbers with Twilio).
 
 ```python
-# always run from quant-trading root directory (/Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
-# sometimes issue with personal (importing correct keys, secrets, etc)
+# Always run from quant-trading root directory (/Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# Sometimes issue with personal (importing correct keys, secrets, etc)
 
 # Standard library imports
 import os
@@ -58,10 +58,10 @@ stocks.FMP_API_KEY = personal.fmp_api_key
 stocks.twilio_client = TwilioClient(personal.twilio_account_sid, personal.twilio_auth_token)
 stocks.twilio_phone_to, stocks.twilio_phone_from = personal.twilio_phone_to, personal.twilio_phone_from
 
-# check that portfolio belongs to the correct account (<<your_other_username>> vs. <<your_username>>)
+# Check that portfolio belongs to the correct account (<<your_other_username>> vs. <<your_username>>)
 stocks.portfolio_account = "alpaca_<<your_username>>"
 
-# make sure the right algorithm is being retrieved: make sure to check/change portfolio['constants'] ie algorithm type (rr = relative rank), up move, down move, interval days, stop loss, ...., start_day, etc before running, portfolio name reflects algorithm and parameters
+# Make sure the right algorithm is being retrieved: make sure to check/change portfolio['constants'] ie algorithm type (rr = relative rank), up move, down move, interval days, stop loss, ...., start_day, etc before running, portfolio name reflects algorithm and parameters
 portfolio = stocks.get_saved_portfolio_backup("portfolio_rr_50_-50_20_-0.2_0.2_-0.05_2000_100_True_False_False_{'usd': 10000}_2024-12-01_to_" + datetime.now().strftime('%Y-%m-%d'))
 
 # BE CAREFUL, paper_trading: update to current value (to reflect current trading, especially when need to restart the script ensure paper_trading reflects last paper_trading value), portfolio_usd_value_negative_change_from_max_limit (variable not listed since keep at default that reflects a Stop-Loss on your entire portfolio, default is -0.3, meaning that if your portfolio loses 30% relative to it's max value it will automatically panic sell negative roi assets and set paper_trading=True and continue paper_trading=True until current assets >= portfolio_max_value*(1-0.3) and current_roi >= 0.045),  portfolio_current_roi_restart: a variable that if paper_trading=True (and 'engaged': True) reflects when the python script changes to paper_trading=False (when current_roi >= 0.045 in this example), download_and_save_tickers_data: have to ensure that one portfolio_trading instance is saving data (don't want all of your scripts to be saving data, just one and then the other scripts wait for the data to be saved and execute their algorithm runs on that saved data), fmp_paid_data: if you're paying $20/mo for FMP data pass fmp_paid_data=True otherwise default is Google Finance data with fmp_paid_data=False
@@ -73,8 +73,8 @@ stocks.portfolio_trading(portfolio=portfolio, paper_trading=False, portfolio_cur
 tngaia is an acronym for what kind of algorithm the trading script incorporates, in this case Top-N Gainers AI Analysis (where n is a number set in parameters reflecting top-n gainers from the day to be analyzed by AI - OpenAI or Gemini Pro, both options are available in stocks package - for buy / sell opportunities executed at start of next trading day). Due to simplicity and pricing Gemini Pro is being used currently.
 
 ```python
-# always run from quant-trading root directory (/Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
-# sometimes issue with personal (importing correct keys, secrets, etc)
+# Always run from quant-trading root directory (/Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# Sometimes issue with personal (importing correct keys, secrets, etc)
 
 # Standard library imports
 import os
@@ -107,10 +107,10 @@ stocks.google_gemini_pro_model = genai.GenerativeModel('gemini-pro')
 stocks.twilio_client = TwilioClient(personal.twilio_account_sid, personal.twilio_auth_token)
 stocks.twilio_phone_to, stocks.twilio_phone_from = personal.twilio_phone_to, personal.twilio_phone_from
 
-# check that portfolio belongs to the correct account (<<your_other_username>> vs. <<your_username>>)
+# Check that portfolio belongs to the correct account (<<your_other_username>> vs. <<your_username>>)
 stocks.portfolio_account = "alpaca_<<your_other_username>>"
 
-# make sure the right algorithm is being retrieved
+# Make sure the right algorithm is being retrieved
 portfolio = stocks.get_saved_portfolio_backup("portfolio_tngaia_[8, 4]_1_-0.3_0.5_-0.2_1000_100_True_False_False_{'usd': 10000}_2024-03-18_to_" + datetime.now().strftime('%Y-%m-%d'))
 
 # BE CAREFUL, update to current paper_trading, portfolio_usd_value_negative_change_from_max_limit, portfolio_current_roi_restart, have to ensure that another portfolio_trading instance is saving data (download_and_save_tickers_data - default value is False)
@@ -122,8 +122,8 @@ stocks.portfolio_trading(portfolio=portfolio, paper_trading=True, paper_trading_
 Notice that no portfolio_account is declared since I haven't implemented many algorithms in crypto space
 
 ```python
-# always run from quant-trading root directory (/Developer/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
-# sometimes issue with personal (importing correct keys, secrets, etc)
+# Always run from quant-trading root directory (/Developer/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# Sometimes issue with personal (importing correct keys, secrets, etc)
 
 # Standard library imports
 
@@ -143,7 +143,7 @@ crypto.kucoin_client = KucoinClient(personal.kucoin_key_<<your_username>>, perso
 crypto.twilio_client = TwilioClient(personal.twilio_account_sid, personal.twilio_auth_token)
 crypto.twilio_phone_to, crypto.twilio_phone_from = personal.twilio_phone_to, personal.twilio_phone_from
 
-# make sure the right algorithm is being retrieved
+# Make sure the right algorithm is being retrieved
 portfolio = crypto.get_saved_portfolio_backup("portfolio_usdt_rr_10_-10_20_-0.3_0.5_-0.2_1000_100_1000_1000_True_False_False_{'usdt': 10000}_2023-03-12_to_" + datetime.now().strftime('%Y-%m-%d'))
 
 # BE CAREFUL, update to current paper_trading, portfolio_btc_value_negative_change_from_max_limit, portfolio_current_roi_restart, crypto has more volatility which is why portfolio_current_roi_restart limit value is higher
@@ -158,13 +158,12 @@ See [speterlin-stocks#Check Assets](https://github.com/speterlin/speterlin-stock
 Crypto:
 See [speterlin-crypto#Check Assets](https://github.com/speterlin/speterlin-crypto/?tab=readme-ov-file#check-assets)
 
-## Backtesting in Python virtual environment shell
+## Backtesting Stocks in Python virtual environment shell
 
-Both stocks and crypto backtesting don't take into effect a -0.3 Stop-Loss on the entire portfolio (this would add compute time and might subtract from the scientific nature of figuring out which portfolio algorithm and parameter combination performs best in the time period).
+Not taking into effect a -0.3 Stop-Loss on the entire portfolio (this would add compute time and might subtract from the scientific nature of figuring out which portfolio algorithm and parameter combination performs best in the time period).
 
-Algorithms are explained in [speterlin-stocks#Algorithms](https://github.com/speterlin/speterlin-stocks?tab=readme-ov-file#algorithms) and [speterlin-crypto#Algorithms](https://github.com/speterlin/speterlin-crypto?tab=readme-ov-file#algorithms) (only 1 algorithm for crypto since not much reading on different crypto algorithms and rr - relative rank - is simple and historically effective) and parameters are listed within each `portfolio['constants']` or saved name (ie `portfolio_tngaia_[8, 4]_1_-0.3_0.5_-0.2_1000_100_True_False_False_{'usd': 10000}_2024-03-18_to_2025_12_19.pckl`).
+Algorithms are explained in [speterlin-stocks#Algorithms](https://github.com/speterlin/speterlin-stocks?tab=readme-ov-file#algorithms) and parameters are listed within each `portfolio['constants']` or saved name (ie `portfolio_tngaia_[8, 4]_1_-0.3_0.5_-0.2_1000_100_True_False_False_{'usd': 10000}_2024-03-18_to_2025-12-19.pckl`).
 
-Stocks:
 ```python
 # Standard library imports
 import copy
@@ -187,7 +186,7 @@ tickers_with_stock_splits = stocks.get_tickers_with_stock_splits_fmp(start_day=s
 df_tickers_2025_12_19 = stocks.get_saved_tickers_data(date=end_day.strftime('%Y-%m-%d'))
 tickers_to_avoid = stocks.get_tickers_to_avoid(df_tickers_2025_12_19, end_day)
 
-# check tickers_with_stock_splits & tickers_to_avoid before running
+# Check tickers_with_stock_splits & tickers_to_avoid before running
 for up_down_move in up_down_moves:
     for days in interval_days:
         for sl_tsl_a_p in sl_tsl_a_ps: # for sl in sls:
@@ -212,20 +211,27 @@ for up_down_move in up_down_moves:
                     if portfolio_name in portfolios:
                         continue
                     portfolios[portfolio_name] = stocks.run_portfolio(portfolio=portfolio, start_day=start_day, end_day=end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 120, 'days': 60}, tickers_with_stock_splits=tickers_with_stock_splits, tickers_to_avoid=tickers_to_avoid) # senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows)
+```
 
-# List ROIs:
+List ROIs:
+```python
 for portfolio_name, portfolio in portfolios.items():
     portfolio_usd_value = portfolio['balance']['usd']
     for ticker in portfolio['open'].index:
         portfolio_usd_value += portfolio['open'].loc[ticker, 'current_price']*portfolio['open'].loc[ticker, 'balance']
     portfolio_usd_value_growth = (portfolio_usd_value - portfolio['constants']['start_balance']['usd']) / portfolio['constants']['start_balance']['usd'] # float(portfolio_name.split("_")[-2])
     print(portfolio_name + ", USD Value: " + str(portfolio_usd_value) + ", USD Value Growth: " + str(portfolio_usd_value_growth))
+```
 
-# Check outlier individual portfolios ('50_-50_20_[-0.2, 0.2, -0.05]_2000_10000' is an example portfolio)
+Check outlier individual `portfolios` (`'50_-50_20_[-0.2, 0.2, -0.05]_2000_10000'` is an example portfolio):
+```python
 portfolios['50_-50_20_[-0.2, 0.2, -0.05]_2000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
 portfolios['50_-50_20_[-0.2, 0.2, -0.05]_2000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
+```
 
-# if want to update a saved portfolios dict to current dates and not iterate over past values (make sure to check dates, good idea to iterate over last few days - ie new_start_day = end_day - (max(interval_days)+3)
+Update a saved `portfolios` dict to current dates and not iterate over past values:
+```python
+# Make sure to check dates, good idea to iterate over last few days - ie new_start_day = end_day - (max(interval_days)+3)
 new_start_day=datetime.strptime('2025_11_17 13:00:00', '%Y_%m_%d %H:%M:%S')
 new_end_day=datetime.strptime('2025_12_22 13:00:00', '%Y_%m_%d %H:%M:%S')
 
@@ -236,14 +242,23 @@ for portfolio_name, portfolio in portfolios.items():
     if portfolio_name in portfolios_updated:
         continue
     portfolios_updated[portfolio_name] = stocks.run_portfolio(portfolio=new_portfolio, start_day=new_start_day, end_day=new_end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 420, 'days': 20}, tickers_with_stock_splits=tickers_with_stock_splits, tickers_to_avoid=tickers_to_avoid) # ,
+```
 
-# Saving portfolios dict to data (make sure that dates reflect start and end date of that portfolio):
+Saving `portfolios` dict to data:
+```python
+# Make sure that dates reflect start and end date of that portfolio
 f = open('data/stocks/saved_portfolio_backups/back_testing/' + 'portfolios_' + type + '_' + ','.join(map(str,up_down_moves)) + '_' + ','.join(map(str,interval_days)) + \
  '_' + ','.join(map(str,sl_tsl_a_ps)) + '_' +  ','.join(map(str,usd_invests)) + '_' + ','.join(map(str,balances_usd)) + '_' + start_day.strftime('%Y_%m_%d') + '_to_' + end_day.strftime('%Y_%m_%d')\
  + '.pckl', 'wb') # 'rb'
 pd.to_pickle(portfolios, f) # portfolios = pd.read_pickle(f)
 f.close()
 ```
+
+## Backtesting Crypto in Python virtual environment shell
+
+Not taking into effect a -0.3 Stop-Loss on the entire portfolio (this would add compute time and might subtract from the scientific nature of figuring out which portfolio algorithm and parameter combination performs best in the time period).
+
+Algorithms are explained in [speterlin-crypto#Algorithms](https://github.com/speterlin/speterlin-crypto?tab=readme-ov-file#algorithms) (only 1 algorithm for crypto since not much reading on different crypto algorithms and rr - relative rank - is simple and historically effective) and parameters are listed within each `portfolio['constants']` or saved name (ie `portfolio_usdt_rr_10_-10_20_-0.3_0.5_-0.2_1000_100_1000_1000_True_False_False_{'usdt': 10000}_2023-03-12_to_2025-12-19.pckl`)
 
 Crypto:
 ```python
@@ -292,8 +307,10 @@ for up_down_move in up_down_moves:
                                 'roi(btc)': 'float64', 'kucoin_usdt_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price(btc)': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}) # 'binance_btc_24h_vol(btc)'
                             }
                             portfolios[portfolio_name] = crypto.run_portfolio_rr(portfolio=portfolio, start_day=start_day, end_day=end_day, rr_sell=True, paper_trading=True, back_testing=True)
+```
 
-# List ROIs:
+List ROIs:
+```python
 kucoin_pairs_with_price_and_vol_current = crypto._fetch_data(crypto.get_kucoin_pairs, params={}, error_str=" - Kucoin get tickers error on: " + str(datetime.now()), empty_data={})
 for portfolio_name, portfolio in portfolios.items():
     portfolio_usdt_value = portfolio['balance']['usdt']
@@ -304,12 +321,17 @@ for portfolio_name, portfolio in portfolios.items():
         portfolio_usdt_value += price*balance
     portfolio_usdt_value_growth = (portfolio_usdt_value - portfolio['constants']['start_balance']['usdt']) / portfolio['constants']['start_balance']['usdt'] # float(portfolio_name.split("_")[-3]) # ultimately worried about btc value, maybe refactor and add portfolio roi
     print(portfolio_name + ", USDT Value: " + str(portfolio_usdt_value) + ", USDT Value Growth: " + str(portfolio_usdt_value_growth))
+```
 
-# Check outlier individual portfolios ('10_-10_20_[-0.3, 0.5, -0.2]_1000_10000_1000_1000' is an example portfolio):
+Check outlier individual `portfolios` (`'10_-10_20_[-0.3, 0.5, -0.2]_1000_10000_1000_1000'` is an example portfolio):
+```python
 portfolios['10_-10_20_[-0.3, 0.5, -0.2]_1000_10000_1000_1000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['symbol', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_price(btc)', 'current_roi', 'current_roi(btc)']]
 portfolios['10_-10_20_[-0.3, 0.5, -0.2]_1000_10000_1000_1000']['sold'].sort_values('roi(btc)', inplace=False, ascending=False)[['symbol', 'buy_date', 'buy_price', 'buy_price(btc)', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'sell_price(btc)', 'roi(btc)']]
+```
 
-# if want to update a saved portfolios dict to current dates and not iterate over past values
+Update a saved portfolios dict to current dates and not iterate over past values:
+```python
+# Make sure to check dates, good idea to iterate over last few days - ie new_start_day = end_day - (max(interval_days)+3)
 new_start_day=datetime.strptime('2025_11_29 17:00:00', '%Y_%m_%d %H:%M:%S')
 new_end_day=datetime.strptime('2025_12_21 17:00:00', '%Y_%m_%d %H:%M:%S')
 
@@ -320,8 +342,11 @@ for portfolio_name, portfolio in portfolios.items():
     if portfolio_name in portfolios_updated:
         continue
     portfolios_updated[portfolio_name] = crypto.run_portfolio_rr(portfolio=new_portfolio, start_day=new_start_day, end_day=new_end_day, rr_sell=True, paper_trading=True, back_testing=True)
+```
 
-# Saving portfolios dict to data (make sure that dates reflect start and end date of that portfolio):
+Saving `portfolios` dict to data:
+```python
+# Make sure that dates reflect start and end date of that portfolio
 f = open('data/crypto/saved_portfolio_backups/back_testing/' + 'portfolios_rr_kucoin_' + ','.join(map(str,up_down_moves)) + '_' + ','.join(map(str,interval_days)) + \
 '_' + ','.join(map(str,sl_tsl_a_ps)) + '_' +  ','.join(map(str,usdt_invests)) + '_' + ','.join(map(str,balances_usdt)) + '_' + \
 ','.join(map(str,coins_to_analyzes)) + '_' + ','.join(map(str,rank_rise_d_buy_limits)) +  '_' + start_day.strftime('%Y_%m_%d') + '_to_' + end_day.strftime('%Y_%m_%d') + '.pckl', 'wb') #   'rb' #
@@ -338,11 +363,11 @@ senate_timestamps_and_tickers_inflows_and_outflows = stocks._fetch_data(stocks.g
 
 ## Backtest over a single portfolio
 
+Senate Trading (senate_trading):
 ```python
 start_day = datetime.strptime('2022_01_24 13:00:00', '%Y_%m_%d %H:%M:%S')
 end_day = datetime.strptime('2024_01_24 13:00:00', '%Y_%m_%d %H:%M:%S')
 
-# senate_trading algorithm
 portfolio_senate_trading_test = {
     'constants': {'type': 'senate_trading', 'up_down_move': 5, 'days': 30, 'sl': -0.2, 'tsl_a': 0.2, 'tsl_p': -0.05, 'usd_invest': 1000, 'usd_invest_min': 100, 'buy_date_gtrends_15d': False, 'end_day_open_positions_gtrends_15d': False, 'end_day_open_positions_fmp_24h_vol': False,\
     'start_balance': {'usd': 10000}, 'start_day': start_day.strftime('%Y-%m-%d')},
@@ -356,8 +381,10 @@ portfolio_senate_trading_test = {
 }
 
 portfolio_senate_trading_test = stocks.run_portfolio(portfolio=portfolio_senate_trading_test, start_day=start_day, end_day=end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': False, 'time': 420, 'days': 20}, senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows)
+```
 
-# airs algorithm
+AI Recommendations in Sector (airs) algorithm:
+```python
 # Make sure sector in 'up_down_move' is one of the listed sectors
 sectors = list(df_tickers_2025_12_19.Sector.unique())
 
