@@ -223,7 +223,7 @@ for portfolio_name, portfolio in portfolios.items():
     print(portfolio_name + ", USD Value: " + str(portfolio_usd_value) + ", USD Value Growth: " + str(portfolio_usd_value_growth))
 ```
 
-Check outlier individual `portfolios` (`'50_-50_20_[-0.2, 0.2, -0.05]_2000_10000'` is an example portfolio), sometimes outlier portfolios have stock split data issues and you might have to update stock split logic or add the problem tickers to `tickers_to_avoid` and re-run the backtest:
+Check outlier portfolios in `portfolios` (`'50_-50_20_[-0.2, 0.2, -0.05]_2000_10000'` is an example portfolio), sometimes outlier portfolios have stock split data issues and you might have to update stock split logic or add the problem tickers to `tickers_to_avoid` and re-run the backtest:
 ```python
 portfolios['50_-50_20_[-0.2, 0.2, -0.05]_2000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
 portfolios['50_-50_20_[-0.2, 0.2, -0.05]_2000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
