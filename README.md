@@ -171,8 +171,8 @@ import copy
 # Third Party imports
 import pandas as pd
 
-portfolios = {} #  # rr,,tr # long only # maybe refactor pccepsf to industry check  like ic
-type = 'rr' # 'tilupccu'
+portfolios = {}
+type = 'rr' # 'tilupccu' # long only # can change tilupccu custom kpis (# of losers and pb,eps to something else with a fork) # industry check like ic
 up_down_moves = [10,20,50,100] # [5] # [1,0],[1,-1] #  
 interval_days = [5,10] # , # , 1,2,,15,20 # , # 90,120,150,180,210,240,270,300,330,365
 sl_tsl_a_ps = [[-0.15,0.05,-0.0125],[-0.2,0.2,-0.05],[-0.3,0.5,-0.2]] # [-1,10,-5] #  all performed worse than [-0.15, 0.05, -0.0125]: [-0.15, 0.05, -0.02], [-0.15, 0.07, -0.0175], [-0.15, 0.10, -0.025], [-0.10, 0.05, -0.0125]
@@ -183,8 +183,8 @@ start_day = datetime.strptime('2025_10_13 13:00:00', '%Y_%m_%d %H:%M:%S')
 end_day = datetime.strptime('2025_12_19 13:00:00', '%Y_%m_%d %H:%M:%S')
 
 tickers_with_stock_splits = stocks.get_tickers_with_stock_splits_fmp(start_day=start_day)
-df_tickers_2025_12_19 = stocks.get_saved_tickers_data(date=end_day.strftime('%Y-%m-%d'))
-tickers_to_avoid = stocks.get_tickers_to_avoid(df_tickers_2025_12_19, end_day)
+df_tickers_end_day = stocks.get_saved_tickers_data(date=end_day.strftime('%Y-%m-%d'))
+tickers_to_avoid = stocks.get_tickers_to_avoid(df_tickers_end_day, end_day)
 
 # Check tickers_with_stock_splits & tickers_to_avoid before running
 for up_down_move in up_down_moves:
@@ -223,7 +223,7 @@ for portfolio_name, portfolio in portfolios.items():
     print(portfolio_name + ", USD Value: " + str(portfolio_usd_value) + ", USD Value Growth: " + str(portfolio_usd_value_growth))
 ```
 
-Check outlier portfolios in `portfolios` (`'50_-50_20_[-0.2, 0.2, -0.05]_2000_10000'` is an example portfolio), sometimes outlier portfolios have stock split data issues and you might have to update stock split logic or add the problem tickers to `tickers_to_avoid` and re-run the backtest:
+Check outlier portfolios in `portfolios` (`'50_-50_20_[-0.2, 0.2, -0.05]_2000_10000'` is an example portfolio), sometimes outlier portfolios have stock split data issues and you might have to update `tickers_with_stock_splits` or add the problem tickers to `tickers_to_avoid` and re-run the backtest:
 ```python
 portfolios['50_-50_20_[-0.2, 0.2, -0.05]_2000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
 portfolios['50_-50_20_[-0.2, 0.2, -0.05]_2000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
@@ -363,7 +363,7 @@ senate_timestamps_and_tickers_inflows_and_outflows = stocks._fetch_data(stocks.g
 
 ## Backtest over a single portfolio
 
-Senate Trading (senate_trading):
+Senate Trading (senate_trading) algorithm:
 ```python
 start_day = datetime.strptime('2022_01_24 13:00:00', '%Y_%m_%d %H:%M:%S')
 end_day = datetime.strptime('2024_01_24 13:00:00', '%Y_%m_%d %H:%M:%S')
@@ -386,7 +386,7 @@ portfolio_senate_trading_test = stocks.run_portfolio(portfolio=portfolio_senate_
 AI Recommendations in Sector (airs) algorithm:
 ```python
 # Make sure sector in 'up_down_move' is one of the listed sectors
-sectors = list(df_tickers_2025_12_19.Sector.unique())
+sectors = list(df_tickers_end_day.Sector.unique())
 
 portfolio_airs_test = { # 'tr', 'zr' and remove up_down_move, 'tr' have to start on '2020-05-08', first day with tradingview ratings # 'up_down_move': 100, 'days': 15, 'sl': -0.15, 'tsl_a': 0.05, 'tsl_p': -0.0125, 'usd_invest': 1000,
     'constants': {'type': 'airs', 'up_down_move': [8,4,'Financial Services'], 'days': 0, 'sl': -0.3, 'tsl_a': 0.5, 'tsl_p': -0.2, 'usd_invest': 1000, 'usd_invest_min': 100, 'buy_date_gtrends_15d': True, 'end_day_open_positions_gtrends_15d': False,\
