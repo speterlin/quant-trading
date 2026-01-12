@@ -28,7 +28,7 @@ Crypto:
 
 ## Python virtual environment (quant-trading directory requirements.txt)
 
-Your virtual environment should have installed and up-to-date packages necessary for collecting and analyzing data and executing trades and AI analysis (for both stocks and crypto trading) listed in a `requirements.txt` (check my `requirements.txt` file as an example) in your quant-trading root directory. You can do easily do that after installing `speterlin-stocks` and `speterlin-crypto` with a `pip freeze > requirements.txt` call and then call `pip install --upgrade -r requirements.txt` every time you want to upgrade packages.
+Your virtual environment should have installed and up-to-date packages necessary for collecting and analyzing data and executing trades and AI analysis (for both stocks and crypto trading) listed in a `requirements.txt` (check my `requirements.txt` file as an example) in your quant-trading root directory. You can easily do that after installing `speterlin-stocks` and `speterlin-crypto` with a `pip freeze > requirements.txt` call and then call `pip install --upgrade -r requirements.txt` every time you want to upgrade packages.
 
 ## Python script for Stocks (programs/stocks/stocks_alpaca_<<your_username>>.py)
 
@@ -65,7 +65,7 @@ stocks.portfolio_account = "alpaca_<<your_username>>"
 portfolio = stocks.get_saved_portfolio_backup("portfolio_rr_50_-50_20_-0.2_0.2_-0.05_2000_100_True_False_False_{'usd': 10000}_2024-12-01_to_" + datetime.now().strftime('%Y-%m-%d'))
 
 # BE CAREFUL, paper_trading: update to current value (to reflect current trading, especially when need to restart the script ensure paper_trading reflects last paper_trading value), portfolio_usd_value_negative_change_from_max_limit (variable not listed since keep at default that reflects a Stop-Loss on your entire portfolio, default is -0.3, meaning that if your portfolio loses 30% relative to it's max value it will automatically panic sell negative roi assets and set paper_trading=True and continue paper_trading=True until current assets >= portfolio_max_value*(1-0.3) and current_roi >= 0.045),  portfolio_current_roi_restart: a variable that if paper_trading=True (and 'engaged': True) reflects when the python script changes to paper_trading=False (when current_roi >= 0.045 in this example), download_and_save_tickers_data: have to ensure that one portfolio_trading instance is saving data (don't want all of your scripts to be saving data, just one and then the other scripts wait for the data to be saved and execute their algorithm runs on that saved data), fmp_paid_data: if you're paying $20/mo for FMP data pass fmp_paid_data=True otherwise default is Google Finance data with fmp_paid_data=False
-stocks.portfolio_trading(portfolio=portfolio, paper_trading=False, portfolio_current_roi_restart={'engaged': False, 'limit': 0.045}, download_and_save_tickers_data=True, fmp_paid_data=True)
+stocks.portfolio_trading(portfolio=portfolio, paper_trading=False, portfolio_current_roi_restart={'engaged': False, 'limit': 0.045}, download_and_save_tickers_data={'engaged': True, 'fmp_paid_data': True})
 ```
 
 ## Another Python script for Stocks (with AI trading, programs/stocks/stocks_tngaia_alpaca_<<your_other_username>>.py)
@@ -113,7 +113,7 @@ stocks.portfolio_account = "alpaca_<<your_other_username>>"
 # Make sure the right algorithm is being retrieved
 portfolio = stocks.get_saved_portfolio_backup("portfolio_tngaia_[8, 4]_1_-0.3_0.5_-0.2_1000_100_True_False_False_{'usd': 10000}_2024-03-18_to_" + datetime.now().strftime('%Y-%m-%d'))
 
-# BE CAREFUL, update to current paper_trading, portfolio_usd_value_negative_change_from_max_limit, portfolio_current_roi_restart, have to ensure that another portfolio_trading instance is saving data (download_and_save_tickers_data - default value is False)
+# BE CAREFUL, update to current paper_trading, portfolio_usd_value_negative_change_from_max_limit, portfolio_current_roi_restart, have to ensure that another portfolio_trading instance is saving data (download_and_save_tickers_data - default value is {'engaged': False, 'fmp_paid_data': False})
 stocks.portfolio_trading(portfolio=portfolio, paper_trading=True, paper_trading_on_used_account=True, portfolio_usd_value_negative_change_from_max_limit=-0.69, portfolio_current_roi_restart={'engaged': True, 'limit': 0.075}) # portfolio_rr_50_50_20_sl_0_3_tsl_a_0_5_p_0_2 # , buying_disabled=False`
 ```
 
