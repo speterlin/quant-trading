@@ -239,7 +239,7 @@ portfolios_updated = {}
 for portfolio_name, portfolio in portfolios.items():
     print(portfolio_name)
     new_portfolio = copy.deepcopy(portfolio)
-    if portfolio_name in portfolios_updated:
+    if portfolio_name in portfolios_updated: # precautionary
         continue
     portfolios_updated[portfolio_name] = stocks.run_portfolio(portfolio=new_portfolio, start_day=new_start_day, end_day=new_end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 420, 'days': 20}, tickers_with_stock_splits=tickers_with_stock_splits, tickers_to_avoid=tickers_to_avoid) # ,
 ```
@@ -358,7 +358,7 @@ f.close()
 
 ```python
 df_tickers_sp500 = stocks._fetch_data(stocks.get_sp500_ranked_tickers_by_slickcharts, params={}, error_str=" - No S&P 500 tickers data from Slickcharts on: " + str(datetime.now()), empty_data = pd.DataFrame())
-senate_timestamps_and_tickers_inflows_and_outflows = stocks._fetch_data(stocks.get_senate_timestamps_and_tickers_inflows_and_outflows_by_month_for_stocks, params={'stocks_list': list(df_tickers_sp500.index)}, error_str=" - Issues with senate timestamps and tickers inflows and outflows by month data from FMP on: " + str(datetime.now()), empty_data = pd.DataFrame())
+senate_timestamps_and_tickers_inflows_and_outflows = stocks._fetch_data(stocks.senate_timestamps_and_tickers_inflows_and_outflows_by_month_for_stocks, params={'stocks_list': list(df_tickers_sp500.index)}, error_str=" - Issues with senate timestamps and tickers inflows and outflows by month data from FMP on: " + str(datetime.now()), empty_data = pd.DataFrame())
 ```
 
 ## Backtest over a single portfolio
@@ -407,8 +407,6 @@ portfolio_airs_test = stocks.run_portfolio(portfolio=portfolio_airs_test, start_
 ## Other Information
 
 * Picks up major holidays (Stocks will sleep during holidays like weekends, Crypto will continue), hour changes are incorporated automatically
-
-* Sometimes orders will remain `Not Filled` due to price fluctuations and new orders happening after (balance being depleted), and you'll have to manually delete those orders or re-order and manually change their `trade_notes` in the `portfolio` dict object
 
 * Sometimes deleting old portfolios won't work, ie `data/stocks/saved_portfolio_backups/alpaca_<<your_username>>/portfolio_rr_50_-50_20_-0.2_0.2_-0.05_2000_100_True_False_False_{'usd'/ 10000}_2024-12-01_to_2025-11-14.pckl` won't be properly replaced with saved portfolio on 2025-11-17 and you'll have to manually delete old files such as this one
 
