@@ -16,7 +16,7 @@ Don't run active terminals on different computers from same directory (can do th
 
 ## Running the Python script in virtual environment (quant-trading directory)
 
-My quant-trading directory is on GitHub so I can access / change code from other computers with pull / push git (not iCloud due to ChatGPT virtual environment warning mentioned above). I also access my spare computer which runs (like a server) 24/7 via Chrome Remote Desktop (highly recommend if using a spare computer to access that computer from another labtop to deal with issues like restarting if python scripts all of a sudden freeze or run into unforeseen errors - happens more often than you think - or to get rid of working memory / cache which takes over the storage of that computer).
+My quant-trading directory is on GitHub so I can access / change code from other computers with git pull / push (not iCloud due to ChatGPT virtual environment warning mentioned above). I also access my spare computer which runs (like a server) 24/7 via Chrome Remote Desktop (highly recommend if using a spare computer to access that computer from another labtop to deal with issues like restarting if python scripts all of a sudden freeze or run into unforeseen errors - happens more often than you think - or to get rid of working memory / cache which takes over the storage of that computer).
 
 This script (below) is run after virtual environment is properly set up, personal module is set up and located in `env/lib/python<<python_version>>/site-packages/personal.py` (like where package directories `speterlin_stocks` and `speterlin_crypto` are downloaded so `personal` module can be imported and variables called like `personal.<<variable_name>>`). All code below (in this section and below sections) is run in an active virtual environment (run `source env/bin/activate` before running actual script or entering `python` to enter the virtual environment shell and enter code manually).
 
@@ -58,7 +58,7 @@ stocks.FMP_API_KEY = personal.fmp_api_key
 stocks.twilio_client = TwilioClient(personal.twilio_account_sid, personal.twilio_auth_token)
 stocks.twilio_phone_to, stocks.twilio_phone_from = personal.twilio_phone_to, personal.twilio_phone_from
 
-# Check that portfolio belongs to the correct account (<<your_other_username>> vs. <<your_username>>)
+# Check that portfolio belongs to the correct account (<<your_username>> vs. <<your_other_username>>)
 stocks.portfolio_account = "alpaca_<<your_username>>"
 
 # Make sure the right algorithm is being retrieved: make sure to check/change portfolio['constants'] ie algorithm type (rr = relative rank), up move, down move, interval days, stop loss, ...., start_day, etc before running, portfolio name reflects algorithm and parameters
@@ -82,11 +82,11 @@ import os
 # Third Party imports
 import speterlin_stocks.module1 as stocks
 import alpaca_trade_api as tradeapi
+import google.generativeai as genai
 from twilio.rest import Client as TwilioClient
 from datetime import datetime, timedelta # importing for ease of use timedelta even though only needed for Python virtual environment shell inspection of portfolio or data or running stocks.run_portfolio() manually
 # from openai import OpenAI
 # from langchain_openai import ChatOpenAI # old implementation of langchain: # from langchain.chat_models import ChatOpenAI
-import google.generativeai as genai
 
 # Local Imports
 import personal
@@ -96,13 +96,12 @@ stocks.alpaca_api = tradeapi.REST(personal.alpaca_key_<<your_other_username>>, p
 
 stocks.FMP_API_KEY = personal.fmp_api_key
 
-# stocks.openai_client = OpenAI(organization=personal.openai_organization, api_key=personal.openai_secret_api_key)
-# stocks.chat_model = ChatOpenAI(temperature=0, openai_api_key=personal.openai_secret_api_key)
-
 GOOGLE_API_KEY = personal.google_gemini_pro_api_key
-
 genai.configure(api_key=GOOGLE_API_KEY)
 stocks.google_gemini_pro_model = genai.GenerativeModel('gemini-pro')
+
+# stocks.openai_client = OpenAI(organization=personal.openai_organization, api_key=personal.openai_secret_api_key)
+# stocks.chat_model = ChatOpenAI(temperature=0, openai_api_key=personal.openai_secret_api_key)
 
 stocks.twilio_client = TwilioClient(personal.twilio_account_sid, personal.twilio_auth_token)
 stocks.twilio_phone_to, stocks.twilio_phone_from = personal.twilio_phone_to, personal.twilio_phone_from
@@ -150,7 +149,7 @@ portfolio = crypto.get_saved_portfolio_backup("portfolio_usdt_rr_10_-10_20_-0.3_
 crypto.portfolio_trading(portfolio=portfolio, exchange="kucoin", paper_trading=True, portfolio_usdt_value_negative_change_from_max_limit=-0.05, portfolio_current_roi_restart={'engaged': True, 'limit': 0.90}, download_and_save_coins_data=True)`
 ```
 
-## Checking assets value in Python virtual environment shell (calling python and then entering Python virtual environment shell as opposed to running a script with python <<directory_path/file_name.py>>) after manually line-by-line importing necessary packages listed in appropriate script like Python script for Stocks programs/stocks/stocks_alpaca_<<your_username>>.py to properly set up that Python environment
+## Checking assets value in Python virtual environment shell (calling python and then entering Python virtual environment shell as opposed to running a script with python <<directory_path/file_name.py>>) after manually line-by-line importing necessary packages listed in appropriate script like Python script for Stocks (programs/stocks/stocks_alpaca_<<your_username>>.py) to properly set up that Python environment
 
 Stocks:
 See [speterlin-stocks#Check Assets](https://github.com/speterlin/speterlin-stocks/?tab=readme-ov-file#check-assets)
@@ -223,7 +222,7 @@ for portfolio_name, portfolio in portfolios.items():
     print(portfolio_name + ", USD Value: " + str(portfolio_usd_value) + ", USD Value Growth: " + str(portfolio_usd_value_growth))
 ```
 
-Check outlier portfolios in `portfolios` (`'50_-50_20_[-0.2, 0.2, -0.05]_2000_10000'` is an example portfolio), sometimes outlier portfolios have stock split data issues and you might have to update `tickers_with_stock_splits` or add the problem tickers to `tickers_to_avoid` and re-run the backtest:
+Check outlier portfolios in `portfolios` (`'50_-50_20_[-0.2, 0.2, -0.05]_2000_10000'` is an example portfolio), sometimes outlier portfolios have data issues (APIs aren’t synced with stock splits or prices for certain stocks which causes a huge +/- ROI for a ticker) and you have to update `tickers_with_stock_splits` or add the problem tickers to `tickers_to_avoid` and re-run the backtest:
 ```python
 portfolios['50_-50_20_[-0.2, 0.2, -0.05]_2000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
 portfolios['50_-50_20_[-0.2, 0.2, -0.05]_2000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
@@ -306,7 +305,7 @@ for up_down_move in up_down_moves:
                                 {'coin': 'object', 'symbol': 'object', 'position': 'object', 'buy_date': 'datetime64[ns]', 'buy_price': 'float64', 'buy_price(btc)': 'float64', 'balance': 'float64', 'sell_date': 'datetime64[ns]', 'sell_price': 'float64', 'sell_price(btc)': 'float64',\
                                 'roi(btc)': 'float64', 'kucoin_usdt_24h_vol': 'float64', 'gtrends_15d': 'float64', 'rank_rise_d': 'float64', 'tsl_max_price(btc)': 'float64', 'trade_notes': 'object', 'other_notes': 'object'}) # 'binance_btc_24h_vol(btc)'
                             }
-                            portfolios[portfolio_name] = crypto.run_portfolio_rr(portfolio=portfolio, start_day=start_day, end_day=end_day, rr_sell=True, paper_trading=True, back_testing=True)
+                            portfolios[portfolio_name] = crypto.run_portfolio_rr(portfolio=portfolio, start_day=start_day, end_day=end_day, paper_trading=True, back_testing=True)
 ```
 
 List ROIs:
@@ -341,7 +340,7 @@ for portfolio_name, portfolio in portfolios.items():
     new_portfolio = copy.deepcopy(portfolio)
     if portfolio_name in portfolios_updated:
         continue
-    portfolios_updated[portfolio_name] = crypto.run_portfolio_rr(portfolio=new_portfolio, start_day=new_start_day, end_day=new_end_day, rr_sell=True, paper_trading=True, back_testing=True)
+    portfolios_updated[portfolio_name] = crypto.run_portfolio_rr(portfolio=new_portfolio, start_day=new_start_day, end_day=new_end_day, paper_trading=True, back_testing=True)
 ```
 
 Saving `portfolios` dict to data:
