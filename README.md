@@ -171,9 +171,9 @@ import copy
 import pandas as pd
 
 portfolios = {}
-type = 'rr' # 'tilupccu' # long only # can change tilupccu custom kpis (# of losers and pb,eps to something else with a fork) # industry check like ic
-up_down_moves = [10,20,50,100] # [5] # [1,0],[1,-1] #  
-interval_days = [5,10] # , # , 1,2,,15,20 # , # 90,120,150,180,210,240,270,300,330,365
+type = 'tilupccu' # 'tilupccu' # long only # can change tilupccu custom kpis (# of losers and pb,eps to something else with a fork) # pc vs. industry check like ic
+up_down_moves = [[1,0],[1,-1]] # ,[2,0],[2,-1] # [5,10,20,50,100] #  #
+interval_days = [1,2,5,10] # , # , ,,15,20 # , # 90,120,150,180,210,240,270,300,330,365
 sl_tsl_a_ps = [[-0.15,0.05,-0.0125],[-0.2,0.2,-0.05],[-0.3,0.5,-0.2]] # [-1,10,-5] #  all performed worse than [-0.15, 0.05, -0.0125]: [-0.15, 0.05, -0.02], [-0.15, 0.07, -0.0175], [-0.15, 0.10, -0.025], [-0.10, 0.05, -0.0125]
 usd_invests = [1000,2000] # 500
 balances_usd = [10000]
