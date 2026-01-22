@@ -98,7 +98,7 @@ stocks.FMP_API_KEY = personal.fmp_api_key
 
 GOOGLE_API_KEY = personal.google_gemini_pro_api_key
 genai.configure(api_key=GOOGLE_API_KEY)
-stocks.google_gemini_pro_model = genai.GenerativeModel('gemini-pro')
+stocks.google_gemini_pro_model = genai.GenerativeModel('models/gemini-pro-latest') # 'gemini-pro'
 
 # stocks.openai_client = OpenAI(organization=personal.openai_organization, api_key=personal.openai_secret_api_key)
 # stocks.chat_model = ChatOpenAI(temperature=0, openai_api_key=personal.openai_secret_api_key)
@@ -176,6 +176,7 @@ up_down_moves = [[1,0],[1,-1]] # ,[2,0],[2,-1] # [5,10,20,50,100] #  #
 interval_days = [1,2,5,10] # , # , ,,15,20 # , # 90,120,150,180,210,240,270,300,330,365
 sl_tsl_a_ps = [[-0.15,0.05,-0.0125],[-0.2,0.2,-0.05],[-0.3,0.5,-0.2]] # [-1,10,-5] #  all performed worse than [-0.15, 0.05, -0.0125]: [-0.15, 0.05, -0.02], [-0.15, 0.07, -0.0175], [-0.15, 0.10, -0.025], [-0.10, 0.05, -0.0125]
 usd_invests = [1000,2000] # 500
+# usd_invest_mins = [100,200,500]
 balances_usd = [10000]
 
 start_day = datetime.strptime('2025_10_13 13:00:00', '%Y_%m_%d %H:%M:%S')
