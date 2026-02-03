@@ -182,9 +182,8 @@ balances_usd = [10000]
 start_day = datetime.strptime('2025_10_13 13:00:00', '%Y_%m_%d %H:%M:%S')
 end_day = datetime.strptime('2025_12_19 13:00:00', '%Y_%m_%d %H:%M:%S')
 
-tickers_with_stock_splits = stocks.get_tickers_with_stock_splits_fmp(start_day=start_day)
-df_tickers_end_day = stocks.get_saved_tickers_data(date=end_day.strftime('%Y-%m-%d'))
-tickers_to_avoid = stocks.get_tickers_to_avoid(df_tickers_end_day, end_day)
+df_tickers_with_stock_splits = stocks.get_tickers_with_stock_splits_fmp(start_day=start_day)
+tickers_with_stock_splits = {'apply_corrections': True, 'only_last_split': True, 'avoid_splitting': {}, 'stock_splits': df_tickers_with_stock_splits}
 
 # Check tickers_with_stock_splits & tickers_to_avoid before running
 for up_down_move in up_down_moves:
@@ -210,7 +209,7 @@ for up_down_move in up_down_moves:
                     print(portfolio_name)
                     if portfolio_name in portfolios:
                         continue
-                    portfolios[portfolio_name] = stocks.run_portfolio(portfolio=portfolio, start_day=start_day, end_day=end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 120, 'days': 60}, tickers_with_stock_splits=tickers_with_stock_splits, tickers_to_avoid=tickers_to_avoid) # senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows)
+                    portfolios[portfolio_name] = stocks.run_portfolio(portfolio=portfolio, start_day=start_day, end_day=end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 120, 'days': 60}, tickers_with_stock_splits=tickers_with_stock_splits) # senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows)
 ```
 
 List ROIs:
