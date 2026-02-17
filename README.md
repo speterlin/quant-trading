@@ -171,9 +171,9 @@ import copy
 import pandas as pd
 
 portfolios = {}
-type = 'fmpr' # 'tilupccu' # long only # can change tilupccu custom kpis (# of losers and pb,eps to something else with a fork) # pc vs. industry check like ic
-up_down_moves = [3] # [1,2] # [1,0],[1,-1],[2,0],[2,-1] # [5,10,20,50,100] #  #
-interval_days = [1,2,5,10] # , # , ,,15,20 # , # 90,120,150,180,210,240,270,300,330,365
+type = 'mmtv' # long only # can change tilupccu custom kpis (# of losers and pb,eps to something else with a fork) # pc vs. industry check like ic
+up_down_moves = [float("NaN")] # [1,2,3] # [1,0],[1,-1],[2,0],[2,-1] # [5,10,20,50,100] #  #
+interval_days = [10,15,20] # , # 1,2,5,, # , # 90,120,150,180,210,240,270,300,330,365
 sl_tsl_a_ps = [[-0.15,0.05,-0.0125],[-0.2,0.2,-0.05],[-0.3,0.5,-0.2]] # [-1,10,-5] #  all performed worse than [-0.15, 0.05, -0.0125]: [-0.15, 0.05, -0.02], [-0.15, 0.07, -0.0175], [-0.15, 0.10, -0.025], [-0.10, 0.05, -0.0125]
 usd_invests = [1000,2000] # 500
 # usd_invest_mins = [100,200,500]
@@ -222,10 +222,10 @@ for portfolio_name, portfolio in portfolios.items():
     print(portfolio_name + ", USD Value: " + str(portfolio_usd_value) + ", USD Value Growth: " + str(portfolio_usd_value_growth))
 ```
 
-Check outlier portfolios in `portfolios` (`'1_-1_5_[-0.3, 0.5, -0.2]_2000_10000'` is an example portfolio), sometimes outlier portfolios have data issues (APIs aren’t synced with stock splits or prices for certain tickers which causes a huge +/- ROI for a ticker) and you have to update `tickers_with_stock_splits` or add the problem tickers to `tickers_to_avoid` and re-run the backtest:
+Check outlier portfolios in `portfolios` (`'nan_nan_10_[-0.15, 0.05, -0.0125]_1000_10000'` is an example portfolio), sometimes outlier portfolios have data issues (APIs aren’t synced with stock splits or prices for certain tickers which causes a huge +/- ROI for a ticker) and you have to update `tickers_with_stock_splits` or add the problem tickers to `tickers_to_avoid` and re-run the backtest:
 ```python
-portfolios['1_-1_5_[-0.3, 0.5, -0.2]_2000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
-portfolios['1_-1_5_[-0.3, 0.5, -0.2]_2000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
+portfolios['nan_nan_10_[-0.15, 0.05, -0.0125]_1000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
+portfolios['nan_nan_10_[-0.15, 0.05, -0.0125]_1000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
 ```
 
 Update a saved `portfolios` dict to current dates and not iterate over past values:
@@ -245,7 +245,7 @@ for portfolio_name, portfolio in portfolios.items():
 
 Saving `portfolios` dict to data:
 ```python
-# Make sure that dates reflect start and end date of that portfolio
+# Make sure that dates reflect start and end date of that portfolio # can also input portfolio_custom_name = "portfolios_rr_10,20,50,100_5,10_[-0.15, 0.05, -0.0125],[-0.2, 0.2, -0.05],[-0.3, 0.5, -0.2]_1000,2000_10000_2025_10_13_to_2025_12_19.pckl" instead of 'portfolios_' + type ....
 f = open('data/stocks/saved_portfolio_backups/back_testing/' + 'portfolios_' + type + '_' + ','.join(map(str,up_down_moves)) + '_' + ','.join(map(str,interval_days)) + \
  '_' + ','.join(map(str,sl_tsl_a_ps)) + '_' +  ','.join(map(str,usd_invests)) + '_' + ','.join(map(str,balances_usd)) + '_' + start_day.strftime('%Y_%m_%d') + '_to_' + end_day.strftime('%Y_%m_%d')\
  + '.pckl', 'wb') # 'rb'
