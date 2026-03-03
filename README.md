@@ -171,9 +171,9 @@ import copy
 import pandas as pd
 
 portfolios = {}
-type = 'mmtv' # long only # can change tilupccu custom kpis (# of losers and pb,eps to something else with a fork) # pc vs. industry check like ic
-up_down_moves = [float("NaN")] # [1,2,3] # [1,0],[1,-1],[2,0],[2,-1] # [5,10,20,50,100] #  #
-interval_days = [10,15,20] # , # 1,2,5,, # , # 90,120,150,180,210,240,270,300,330,365
+type = 'senate_trading' # long only # can change tilupccu custom kpis (# of losers and pb,eps to something else with a fork) # pc vs. industry check like ic
+up_down_moves = [5,15,30,50] # [1,2,3] # [1,0],[1,-1],[2,0],[2,-1] # [5,10,20,50,100] #  #
+interval_days = [30] # , # 1,2,5,10,15,20, # , # 90,120,150,180,210,240,270,300,330,365
 sl_tsl_a_ps = [[-0.15,0.05,-0.0125],[-0.2,0.2,-0.05],[-0.3,0.5,-0.2]] # [-1,10,-5] #  all performed worse than [-0.15, 0.05, -0.0125]: [-0.15, 0.05, -0.02], [-0.15, 0.07, -0.0175], [-0.15, 0.10, -0.025], [-0.10, 0.05, -0.0125]
 usd_invests = [1000,2000] # 500
 # usd_invest_mins = [100,200,500]
@@ -184,6 +184,7 @@ end_day = datetime.strptime('2025_12_19 13:00:00', '%Y_%m_%d %H:%M:%S')
 
 df_tickers_with_stock_splits = stocks.get_tickers_with_stock_splits_fmp(start_day=start_day)
 tickers_with_stock_splits = {'apply_corrections': True, 'only_last_split': True, 'avoid_splitting': {}, 'stock_splits': df_tickers_with_stock_splits}
+# senate_timestamps_and_tickers_inflows_and_outflows - see below in ## 'Checking Stocks Senate trade data'
 
 # Check tickers_with_stock_splits & tickers_to_avoid before running
 for up_down_move in up_down_moves:
@@ -209,7 +210,7 @@ for up_down_move in up_down_moves:
                     print(portfolio_name)
                     if portfolio_name in portfolios:
                         continue
-                    portfolios[portfolio_name] = stocks.run_portfolio(portfolio=portfolio, start_day=start_day, end_day=end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 120, 'days': 60}, tickers_with_stock_splits=tickers_with_stock_splits) # senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows)
+                    portfolios[portfolio_name] = stocks.run_portfolio(portfolio=portfolio, start_day=start_day, end_day=end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 60, 'days': 5}, tickers_with_stock_splits=tickers_with_stock_splits, senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows) #
 ```
 
 List ROIs:
@@ -222,10 +223,10 @@ for portfolio_name, portfolio in portfolios.items():
     print(portfolio_name + ", USD Value: " + str(portfolio_usd_value) + ", USD Value Growth: " + str(portfolio_usd_value_growth))
 ```
 
-Check outlier portfolios in `portfolios` (`'nan_nan_10_[-0.15, 0.05, -0.0125]_1000_10000'` is an example portfolio), sometimes outlier portfolios have data issues (APIs aren’t synced with stock splits or prices for certain tickers which causes a huge +/- ROI for a ticker) and you have to update `tickers_with_stock_splits` or add the problem tickers to `tickers_to_avoid` and re-run the backtest:
+Check outlier portfolios in `portfolios` (`'5_30_[-0.15, 0.05, -0.0125]_1000_10000'` is an example portfolio), sometimes outlier portfolios have data issues (APIs aren’t synced with stock splits or prices for certain tickers which causes a huge +/- ROI for a ticker) and you have to update `tickers_with_stock_splits` or add the problem tickers to `tickers_to_avoid` and re-run the backtest:
 ```python
-portfolios['nan_nan_10_[-0.15, 0.05, -0.0125]_1000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
-portfolios['nan_nan_10_[-0.15, 0.05, -0.0125]_1000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
+portfolios['5_30_[-0.15, 0.05, -0.0125]_1000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
+portfolios['5_30_[-0.15, 0.05, -0.0125]_1000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
 ```
 
 Update a saved `portfolios` dict to current dates and not iterate over past values:
