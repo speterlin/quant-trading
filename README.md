@@ -2,9 +2,9 @@
 
 A Python environment integrating self-made [speterlin-stocks](https://github.com/speterlin/speterlin-stocks) and [speterlin-crypto](https://github.com/speterlin/speterlin-crypto) packages for automated quant-trading. Run the python script (in a python file) as shown below (in a quant-trading root directory) in a virtual environment (make sure it's running on Python 3.12+ to be able to run most up-to-date AI) on a spare computer running 24/7 or a hosted service like Heroku (scheduler for executing market checks, data downloads, algorithm runs) and AWS (for storing data) for automated trading.
 
-For easy implementation create a directory with a Python virtual environment with up-to-date Python (3.12+) and pip. According to ChatGPT: 'Don’t store virtual environments inside iCloud folders, iCloud will corrupt venvs, symlinks, and compiled packages'. Then download packages `speterlin-stocks` and `speterlin-crypto` (pip automatically downloads their dependencies) and make sure they show up as directories in your `env/lib/python<<python_version>>/site-packages/` directory (as `speterlin_stocks` and `speterlin_crypto`) alongside a `personal.py` module you create there (an empty `.py` file) and other dependency packages for easy import.
+For easy implementation create a quant-trading directory with a Python virtual environment with up-to-date Python (3.12+) and pip. According to ChatGPT: 'Don’t store virtual environments inside iCloud folders, iCloud will corrupt venvs, symlinks, and compiled packages'. Then download packages `speterlin-stocks` and `speterlin-crypto` (pip automatically downloads their dependencies) and make sure they show up as directories in your `env/lib/python<<python_version>>/site-packages/` directory (as `speterlin_stocks` and `speterlin_crypto`) alongside other dependency packages.
 
-Set up accounts with a data API (`speterlin-stocks` is currently set up for Financial Modeling Prep $20/mo, `speterlin-crypto` is currently set up for CoinMarketCap $0/mo - no account needed). Set up accounts with a brokerage/exchange API (`speterlin-stocks` is currently using Alpaca - margin trading 2x your deposit, `speterlin-crypto` is using Kucoin - no real trading in USA after new regulations in 2024-09 - for crypto). Set up accounts with an AI analysis API (`speterlin-stocks` is using OpenAI and Google Gemini-Pro, `speterlin-crypto` is not using). If you decide to use different APIs (for data, brokerage/exchange, AI analysis) of your choosing you'll have to fork the appropriate `speterlin-stocks` or `speterlin-crypto` repo and add functions to integrate them into the logic flow. Make sure to label and store all of your base urls, keys, secret identities and auth tokens variables for your APIs in the `personal.py` module and .gitignore this module from any publicly sharing.
+Set up accounts with a data API (`speterlin-stocks` is currently set up for Financial Modeling Prep $20/mo, `speterlin-crypto` is currently set up for CoinMarketCap $0/mo - no account needed). Set up accounts with a brokerage/exchange API (`speterlin-stocks` is currently using Alpaca - margin trading 2x your deposit, `speterlin-crypto` is using Kucoin - no real trading in USA after new regulations in 2024-09 - for crypto). Set up accounts with an AI analysis API (`speterlin-stocks` is using OpenAI and Google Gemini-Pro, `speterlin-crypto` is not using). If you decide to use different APIs (for data, brokerage/exchange, AI analysis) of your choosing you'll have to fork the appropriate `speterlin-stocks` or `speterlin-crypto` repo and add functions to integrate them into the logic flow. Make sure to label and store as variables all of your base urls, keys, secret identities and auth tokens for your APIs in a `personal.py` file you create in your quant-trading root directory (so you can import like a module `import personal`) and .gitignore this file from any publicly sharing.
 
 Backtest algorithms (if you have saved data or access to an API's historical saved data else run a default algorithm - preferably with paper_trading=True - like the one in the script below until you have enough data) with different parameters (algorithms and parameters in this directory are chosen based on quant-trading readings from Medium.com - read my article regarding the subject [How I More Than 2xd My Quant Fund In A Year By Building a Trading Bot](https://medium.com/@speterlin12/how-i-more-than-2xd-my-quant-fund-in-a-year-by-building-a-trading-bot-919930cd29d) - regarding most common algorithms and parameters people use with success - simpler is generally better for retail traders due to lack of data and connection speed in comparison to Hedge Funds and Quant Trading firms) over saved data to see which algorithm and parameter combination work best for the period of time you backtest over which you deem to reflect current market conditions.
 
@@ -18,13 +18,13 @@ Don't run active terminals on different computers from same directory (can do th
 
 My quant-trading directory is on GitHub so I can access / change code from other computers with git pull / push (not iCloud due to ChatGPT virtual environment warning mentioned above). I also access my spare computer which runs (like a server) 24/7 via Chrome Remote Desktop (highly recommend if using a spare computer to access that computer from another labtop to deal with issues like restarting if python scripts all of a sudden freeze or run into unforeseen errors - happens more often than you think - or to get rid of working memory / cache which takes over the storage of that computer).
 
-This script (below) is run after virtual environment is properly set up, personal module is set up and located in `env/lib/python<<python_version>>/site-packages/personal.py` (like where package directories `speterlin_stocks` and `speterlin_crypto` are downloaded so `personal` module can be imported and variables called like `personal.<<variable_name>>`). All code below (in this section and below sections) is run in an active virtual environment (run `source env/bin/activate` before running actual script or entering `python` to enter the virtual environment shell and enter code manually).
+This script (below) is run after virtual environment is properly set up with necessary packages installed and `personal.py` is set up and located in your root directory (ie `Developer/quant-trading/personal.py` so `personal` can be imported and variables called like `personal.<<variable_name>>`). All code below (in this section and below sections) is run in an active virtual environment (run `source env/bin/activate` before running actual script or entering `python` to enter the virtual environment shell and enter code manually).
 
 Stocks:
-`(env) ~/Developer/quant-trading (master) $ python programs/stocks/stocks_alpaca_<<your_username>>.py`
+`(env) ~/Developer/quant-trading (master) $ python -m programs.stocks.stocks_alpaca_<<your_username>>`
 
 Crypto:
-`(env) ~/Developer/quant-trading (master) $ python programs/crypto/crypto_kucoin_<<your_username>>.py`
+`(env) ~/Developer/quant-trading (master) $ python -m programs.crypto.crypto_kucoin_<<your_username>>`
 
 ## Python virtual environment (quant-trading directory requirements.txt)
 
@@ -32,10 +32,10 @@ Your virtual environment should have installed and up-to-date packages necessary
 
 ## Python script for Stocks (programs/stocks/stocks_alpaca_<<your_username>>.py)
 
-You should have multiple accounts with the brokerage you trade with so you can run multiple real trading (paper_trading=False) scripts, in this case account 1: `<<your_username>>` and account 2: `<<your_other_username>>`, both with Alpaca. You can paper_trade multiple scripts off one account if you set `stocks.portfolio_trading(portfolio=portfolio, paper_trading_on_used_account=True, ...)` which doesn't paper_trade on Alpaca / Kucoin itself just in your virtual environment. Twilio is only necessary if you want text notifications to your phone (you'll need to set up `personal.twilio_phone_to` and `personal.twilio_phone_from` numbers with Twilio).
+You should have multiple accounts with the brokerage you trade with if you want to run multiple real trading (paper_trading=False) scripts at same time (ie 2 different algorithms and/or parameters and/or start dates), in this case account 1: `<<your_username>>` and account 2: `<<your_other_username>>`, both with Alpaca. You can paper_trade multiple scripts off one account if you set `stocks.portfolio_trading(portfolio=portfolio, paper_trading_on_used_account=True, ...)` which doesn't paper_trade on Alpaca itself just in your virtual environment. Twilio is only necessary if you want text notifications to your phone (you'll need to set up `personal.twilio_phone_to` and `personal.twilio_phone_from` numbers with Twilio).
 
 ```python
-# Always run from quant-trading root directory (/Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# Always run from quant-trading root directory (Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
 # Sometimes issue with personal (importing correct keys, secrets, etc)
 
 # Standard library imports
@@ -73,7 +73,7 @@ stocks.portfolio_trading(portfolio=portfolio, paper_trading=False, portfolio_cur
 tngaia is an acronym for what kind of algorithm the trading script incorporates, in this case Top-N Gainers AI Analysis (where n is a number set in parameters reflecting top-n gainers from the day to be analyzed by AI - OpenAI or Gemini Pro, both options are available in stocks package - for buy / sell opportunities executed at start of next trading day). Due to simplicity and pricing Gemini Pro is being used currently.
 
 ```python
-# Always run from quant-trading root directory (/Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# Always run from quant-trading root directory (Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
 # Sometimes issue with personal (importing correct keys, secrets, etc)
 
 # Standard library imports
@@ -121,7 +121,7 @@ stocks.portfolio_trading(portfolio=portfolio, paper_trading=True, paper_trading_
 Notice that no portfolio_account is declared since I haven't implemented many algorithms in crypto space
 
 ```python
-# Always run from quant-trading root directory (/Developer/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# Always run from quant-trading root directory (Developer/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
 # Sometimes issue with personal (importing correct keys, secrets, etc)
 
 # Standard library imports
