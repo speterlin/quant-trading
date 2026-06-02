@@ -35,7 +35,7 @@ Your virtual environment should have installed and up-to-date packages necessary
 You should have multiple accounts with the brokerage you trade with if you want to run multiple real trading (paper_trading=False) scripts at same time (ie 2 different algorithms and/or parameters and/or start dates), in this case account 1: `<<your_username>>` and account 2: `<<your_other_username>>`, both with Alpaca. You can paper_trade multiple scripts off one account if you set `stocks.portfolio_trading(portfolio=portfolio, paper_trading_on_used_account=True, ...)` which doesn't paper_trade on Alpaca itself just in your virtual environment. Twilio is only necessary if you want text notifications to your phone (you'll need to set up `personal.twilio_phone_to` and `personal.twilio_phone_from` numbers with Twilio).
 
 ```python
-# Always run from quant-trading root directory (Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# Always run from quant-trading root directory (Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/
 # Sometimes issue with personal (importing correct keys, secrets, etc)
 
 # Standard library imports
@@ -73,7 +73,7 @@ stocks.portfolio_trading(portfolio=portfolio, paper_trading=False, portfolio_cur
 tngaia is an acronym for what kind of algorithm the trading script incorporates, in this case Top-N Gainers AI Analysis (where n is a number set in parameters reflecting top-n gainers from the day to be analyzed by AI - OpenAI or Gemini Pro, both options are available in stocks package - for buy / sell opportunities executed at start of next trading day). Due to simplicity and pricing Gemini Pro is being used currently.
 
 ```python
-# Always run from quant-trading root directory (Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# Always run from quant-trading root directory (Developer/quant-trading) because stocks includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/
 # Sometimes issue with personal (importing correct keys, secrets, etc)
 
 # Standard library imports
@@ -121,7 +121,7 @@ stocks.portfolio_trading(portfolio=portfolio, paper_trading=True, paper_trading_
 Notice that no portfolio_account is declared since I haven't implemented many algorithms in crypto space
 
 ```python
-# Always run from quant-trading root directory (Developer/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/env/lib/python<<python_version>>/site-packages/
+# Always run from quant-trading root directory (Developer/quant-trading) because crypto includes functions which saves / retrieves data in paths off of this root directory and personal which is in Developer/quant-trading/
 # Sometimes issue with personal (importing correct keys, secrets, etc)
 
 # Standard library imports
