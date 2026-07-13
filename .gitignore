@@ -36,7 +36,8 @@ programs/
 # Ignore programs analysis
 programs analysis/
 
-# Need to investigate this folder, created after import personal (personal.py)
+# Need to investigate this further, created after imports (ie personal.py created personal.pyc in root directory, generally imports create a env/lib/python3.12/site-packages/__pycache__/personal.cpython-312.pyc)
+*.pyc
 __pycache__/
 
 # Ignore event registry settings
@@ -46,6 +47,6 @@ eventregistry_settings.json
 pip list 2023-12-29.rtf
 pip list S Computer 2023-12-29.rtf
 
-# Ignore .DS_Store files, don't know why these are created
+# Ignore .DS_Store files
 .DS_Store
 */.DS_Store

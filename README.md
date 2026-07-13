@@ -4,7 +4,7 @@ A Python environment integrating self-made [speterlin-stocks](https://github.com
 
 For easy implementation create a quant-trading directory with a Python virtual environment with up-to-date Python (3.12+) and pip. According to ChatGPT: 'Don’t store virtual environments inside iCloud folders, iCloud will corrupt venvs, symlinks, and compiled packages'. Then download packages `speterlin-stocks` and `speterlin-crypto` (pip automatically downloads their dependencies) and make sure they show up as directories in your `env/lib/python<<python_version>>/site-packages/` directory (as `speterlin_stocks` and `speterlin_crypto`) alongside other dependency packages.
 
-Set up accounts with a data API (`speterlin-stocks` is currently set up for Financial Modeling Prep $20/mo, `speterlin-crypto` is currently set up for CoinMarketCap $0/mo - no account needed). Set up accounts with a brokerage/exchange API (`speterlin-stocks` is currently using Alpaca - margin trading 2x your deposit, `speterlin-crypto` is using Kucoin - no real trading in USA after new regulations in 2024-09 - for crypto). Set up accounts with an AI analysis API (`speterlin-stocks` is using OpenAI and Google Gemini-Pro, `speterlin-crypto` is not using). If you decide to use different APIs (for data, brokerage/exchange, AI analysis) of your choosing you'll have to fork the appropriate `speterlin-stocks` or `speterlin-crypto` repo and add functions to integrate them into the logic flow. Make sure to label and store as variables all of your base urls, keys, secret identities and auth tokens for your APIs in a `personal.py` file you create in your quant-trading root directory (so you can import like a module `import personal`) and .gitignore this file from any publicly sharing.
+Set up accounts with a data API (`speterlin-stocks` is currently set up for Financial Modeling Prep $20/mo, `speterlin-crypto` is currently set up for CoinMarketCap $0/mo - no account needed). Set up accounts with a brokerage/exchange API (`speterlin-stocks` is currently using Alpaca - margin trading 2-4x your deposit, `speterlin-crypto` is using Kucoin - no real trading in USA after new regulations in 2024-09 - for crypto). Set up accounts with an AI analysis API (`speterlin-stocks` is using OpenAI and Google Gemini-Pro, `speterlin-crypto` is not using). If you decide to use different APIs (for data, brokerage/exchange, AI analysis) of your choosing you'll have to fork the appropriate `speterlin-stocks` or `speterlin-crypto` repo and add functions to integrate them into the logic flow. Make sure to label and store as variables all of your base urls, keys, secret identities and auth tokens for your APIs in a `personal.py` file you create in your quant-trading root directory (so you can import like a module `import personal`) and .gitignore this file from any publicly sharing.
 
 Backtest algorithms (if you have saved data or access to an API's historical saved data else run a default algorithm - preferably with paper_trading=True - like the one in the script below until you have enough data) with different parameters (algorithms and parameters in this directory are chosen based on quant-trading readings from Medium.com - read my article regarding the subject [How I More Than 2xd My Quant Fund In A Year By Building a Trading Bot](https://medium.com/@speterlin12/how-i-more-than-2xd-my-quant-fund-in-a-year-by-building-a-trading-bot-919930cd29d) - regarding most common algorithms and parameters people use with success - simpler is generally better for retail traders due to lack of data and connection speed in comparison to Hedge Funds and Quant Trading firms) over saved data to see which algorithm and parameter combination work best for the period of time you backtest over which you deem to reflect current market conditions.
 
@@ -146,7 +146,7 @@ crypto.twilio_phone_to, crypto.twilio_phone_from = personal.twilio_phone_to, per
 portfolio = crypto.get_saved_portfolio_backup("portfolio_usdt_rr_10_-10_20_-0.3_0.5_-0.2_1000_100_1000_1000_True_False_False_{'usdt': 10000}_2023-03-12_to_" + datetime.now().strftime('%Y-%m-%d'))
 
 # BE CAREFUL, update to current paper_trading, portfolio_btc_value_negative_change_from_max_limit, portfolio_current_roi_restart, crypto has more volatility which is why portfolio_current_roi_restart limit value is higher
-crypto.portfolio_trading(portfolio=portfolio, exchange="kucoin", paper_trading=True, portfolio_usdt_value_negative_change_from_max_limit=-0.05, portfolio_current_roi_restart={'engaged': True, 'limit': 0.90}, download_and_save_coins_data=True)`
+crypto.portfolio_trading(portfolio=portfolio, exchange="kucoin", paper_trading=True, portfolio_usdt_value_negative_change_from_max_limit=-0.05, portfolio_current_roi_restart={'engaged': True, 'limit': 0.90}, download_and_save_coins_data=True)
 ```
 
 ## Checking assets value in Python virtual environment shell (calling python and then entering Python virtual environment shell as opposed to running a script with python <<directory_path/file_name.py>>) after manually line-by-line importing necessary packages listed in appropriate script like Python script for Stocks (programs/stocks/stocks_alpaca_<<your_username>>.py) to properly set up that Python environment
@@ -186,7 +186,7 @@ df_tickers_with_stock_splits = stocks.get_tickers_with_stock_splits_fmp(start_da
 tickers_with_stock_splits = {'apply_corrections': True, 'only_last_split': True, 'avoid_splitting': {}, 'stock_splits': df_tickers_with_stock_splits}
 # senate_timestamps_and_tickers_inflows_and_outflows - see below in ## 'Checking Stocks Senate trade data'
 
-# Check tickers_with_stock_splits & tickers_to_avoid before running
+# Check tickers_with_stock_splits & senate_timestamps_and_tickers_inflows_and_outflows (if running senate_trading algorithm) before running
 for up_down_move in up_down_moves:
     for days in interval_days:
         for sl_tsl_a_p in sl_tsl_a_ps: # for sl in sls:
@@ -223,7 +223,7 @@ for portfolio_name, portfolio in portfolios.items():
     print(portfolio_name + ", USD Value: " + str(portfolio_usd_value) + ", USD Value Growth: " + str(portfolio_usd_value_growth))
 ```
 
-Check outlier portfolios in `portfolios` (`'15_30_[-0.3, 0.5, -0.2]_2000_10000'` is an example portfolio), sometimes outlier portfolios have data issues (APIs aren’t synced with stock splits or prices for certain tickers which causes a huge +/- ROI for a ticker) and you have to update `tickers_with_stock_splits` or add the problem tickers to `tickers_to_avoid` and re-run the backtest:
+Check outlier portfolios in `portfolios` (`'15_30_[-0.3, 0.5, -0.2]_2000_10000'` is an example portfolio), sometimes outlier portfolios have data issues (APIs aren’t synced with stock splits or prices for certain tickers which causes a huge +/- ROI for a ticker) and you have to update `tickers_with_stock_splits` or add an issue with the problem tickers to [speterlin-stocks/issues](https://github.com/speterlin/speterlin-stocks/issues) (and I'll update speterlin-stocks) and then re-run the backtest (once the problem is resolved):
 ```python
 portfolios['15_30_[-0.3, 0.5, -0.2]_2000_10000']['sold'].sort_values('roi', inplace=False, ascending=False)[['ticker', 'buy_date', 'buy_price', 'balance', 'rank_rise_d', 'sell_date', 'sell_price', 'roi', 'other_notes']]
 portfolios['15_30_[-0.3, 0.5, -0.2]_2000_10000']['open'].sort_values('current_roi', inplace=False, ascending=False)[['buy_date', 'buy_price', 'balance', 'rank_rise_d', 'current_date', 'current_price', 'current_roi', 'other_notes']]
@@ -241,7 +241,7 @@ for portfolio_name, portfolio in portfolios.items():
     new_portfolio = copy.deepcopy(portfolio)
     if portfolio_name in portfolios_updated: # precautionary
         continue
-    portfolios_updated[portfolio_name] = stocks.run_portfolio(portfolio=new_portfolio, start_day=new_start_day, end_day=new_end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 420, 'days': 20}, tickers_with_stock_splits=tickers_with_stock_splits, tickers_to_avoid=tickers_to_avoid) # ,
+    portfolios_updated[portfolio_name] = stocks.run_portfolio(portfolio=new_portfolio, start_day=new_start_day, end_day=new_end_day, paper_trading=True, back_testing=True, add_pauses_to_avoid_unsolved_error={'engaged': True, 'time': 420, 'days': 20}, tickers_with_stock_splits=tickers_with_stock_splits, senate_timestamps_and_tickers_inflows_and_outflows=senate_timestamps_and_tickers_inflows_and_outflows) # ,
 ```
 
 Saving `portfolios` dict to data:
